@@ -1,0 +1,35 @@
+# venvs
+.venv/
+venv/
+env/
+
+# byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# notebook checkpoints
+.ipynb_checkpoints/
+
+# downloaded datasets / checkpoints (kept out so the repo stays small)
+**/tinyshakespeare.txt
+*.pt
+*.ckpt
+*.bin
+*.safetensors
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# notes
+notes.md
+**/notes.md
+
+# build / dist
+build/
+dist/
+*.egg-info/
