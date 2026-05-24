@@ -37,6 +37,8 @@ Phase 0 is fully scaffolded. The bootstrap + audit + gap-closure work in this se
 
 ## What's next (in order)
 
+> 👉 **Full walkthrough for the user:** [`PHASE0_CLOSURE.md`](PHASE0_CLOSURE.md) — friendly step-by-step runbook covering venv setup, running every parity test, training the capstone, hand-math derivations, and the cold quiz. **Read this first** at the start of the next session.
+
 1. **User: install torch in venv + run all parity tests + capture `evidence/` outputs.**
    ```bash
    cd ~/Desktop/llm-scratch/course

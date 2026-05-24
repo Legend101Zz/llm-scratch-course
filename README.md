@@ -112,6 +112,8 @@ pip install -r requirements.txt
 
 Then read [`COURSE_MAP.md`](COURSE_MAP.md) for the full arc, or jump into [`00_start/`](00_start/) and begin.
 
+**Currently mid-Phase 0?** → [`PHASE0_CLOSURE.md`](PHASE0_CLOSURE.md) is the friendly checklist that walks you through everything from venv setup to the cold quiz that gates Phase 1.
+
 For Phase 1 onward you'll need [Google Colab](https://colab.research.google.com) (T4 free tier) or similar cheap-GPU access; for Phases 4–5 you'll need TPU access (Colab free tier suffices for the graded JAX exercises).
 
 ## Who this is for
