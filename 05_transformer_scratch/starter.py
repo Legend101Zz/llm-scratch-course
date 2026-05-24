@@ -1,9 +1,15 @@
 """Module 5 — full transformer block (forward only, numpy)."""
 
 import numpy as np
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "04_attention_scratch"))
-from solution import multi_head_attention, softmax
+import importlib.util, os
+_spec = importlib.util.spec_from_file_location(
+    "attention_solution",
+    os.path.join(os.path.dirname(__file__), "..", "04_attention_scratch", "solution.py"),
+)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+multi_head_attention = _mod.multi_head_attention
+softmax = _mod.softmax
 
 np.random.seed(0)
 

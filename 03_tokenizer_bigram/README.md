@@ -30,22 +30,46 @@ $$\mathcal{L} = -\frac{1}{N}\sum \log p(x_{t+1} \mid x_t)$$
 
 For a bigram model trained to convergence, **the optimal table is just the empirical bigram counts**, normalized. So you can also just *count* and compare to the trained model. They should match. (Why? Because for cross-entropy on counts, the MLE is the empirical distribution.)
 
-### Build a tiny BPE yourself (5 min, optional but recommended)
+### Build BPE yourself (required — not optional)
 
-Open [`bpe.py`](bpe.py) — ~50 lines. Two pieces:
-1. `train_bpe(text, n_merges)` — repeatedly find the most common adjacent pair, merge it, log the new token.
-2. `encode(text)` / `decode(ids)` — apply learned merges greedily; reverse via the vocab dict.
+> Originally this module had BPE as a 5-min "optional, here's the code" aside.
+> Under the new framing (see [`../CONVENTIONS.md`](../CONVENTIONS.md)), Phase 0 modules implement everything from scratch with a parity test. So BPE is now a proper exercise.
 
-Run `python bpe.py`. Watch tokens like `('e', ' ')`, `(' ', 't')`, `('t', 'h')` get merged early — exactly the high-frequency English bigrams. After 200 merges you'll see whole words pop up as single tokens.
+You'll fill in **[`bpe_starter.py`](bpe_starter.py)** — `train_bpe`, `encode`, `decode`, plus the `get_pairs` and `merge` helpers — ~60 lines total. The skeleton has detailed comments walking you through the algorithm; the docstring at the top lists the 5 algorithmic steps you need to implement.
 
-Compare to GPT-2's `tiktoken`:
+When you can run:
+```bash
+python test.py
+```
+and see all four tests green (`test_roundtrip`, `test_parity_with_solution`, `test_compression`, `test_structural_match_with_tiktoken`), BPE is done.
+
+Then sanity-check against GPT-2's tokenizer:
 ```python
 import tiktoken
 enc = tiktoken.get_encoding("gpt2")
 print(enc.encode("Hello world!"))   # production version, 50,257 vocab
 ```
+Your BPE won't produce identical IDs (tiktoken was trained on much more text), but the algorithm is the same — `test.py`'s `test_structural_match_with_tiktoken` checks the algorithmic equivalence (round-trip works, frequent patterns compress better than gibberish, etc.).
 
-## Build it
+Reference solution: **[`bpe_solution.py`](bpe_solution.py)** — open only after the test passes. It's structured identically to `bpe_starter.py` so a side-by-side diff highlights exactly what was missing.
+
+### Why we use *bytes*, not chars
+
+Look closely at `bpe_starter.py`'s step 1: the base vocab is 256 byte values, not the `set(text)` of unique chars. Why?
+
+Because then **everything UTF-8 round-trips with zero out-of-vocab failures** — emoji, Chinese, weird symbols, all of them. They start as multi-byte sequences and the BPE merges treat byte n-grams uniformly. tiktoken does this; so should you. (A char-level base vocab fails on any string with a character not seen in training.)
+
+The merge dynamics learn the high-frequency *byte* bigrams that happen to correspond to letters first — so the first 30 merges learn things like `(116, 104) -> 'th'`, exactly like a char-level BPE would, but with no UTF-8 fragility.
+
+### Reflection
+
+- Why is char-level tokenization "weaker semantically" than BPE?
+- For BPE, why do we merge the most *frequent* pair? Argue this from an information-theoretic angle — what's the loss function this is implicitly optimizing? *(Hint: the LM ultimately spends the same training-loss budget per token; you want each token to carry roughly equal information.)*
+- A trained bigram NN converges to the count table. What does this say about cross-entropy as a loss function? *(Hint: think about what distribution minimizes the cross-entropy between the empirical distribution and `p_\theta`.)*
+- Why does BPE's `encode()` apply the **earliest-learned** merge first, not the most-frequent one? What goes wrong if you applied merges in count-order? *(Hint: determinism. The same string should encode the same way every time.)*
+- BPE has a known failure mode where a long word can tokenize into way more tokens than its character length would suggest. Construct an example string that breaks your BPE's compression. What's a fix in modern tokenizers like GPT-4's `cl100k_base`?
+
+## Build it (the bigram model)
 
 Open [`starter.py`](starter.py). You'll:
 1. Load `tinyshakespeare.txt` (downloaded automatically).
@@ -53,10 +77,15 @@ Open [`starter.py`](starter.py). You'll:
 3. Build a bigram count table → probabilities → sample from it.
 4. (Optional, +10 min) Train the same bigram as a neural net (1 layer, no hidden units) using PyTorch — to see the two approaches converge to the same answer.
 
-## Reflection
+After `starter.py` works, do the BPE exercise above (`bpe_starter.py` + `test.py`).
 
-- Why is char-level tokenization "weaker semantically"?
-- For BPE, why do we merge the most *frequent* pair? What if we merged the rarest?
-- A trained bigram NN converges to the count table. What does this say about cross-entropy?
+## How this module is "done"
+
+Per [`../CONVENTIONS.md`](../CONVENTIONS.md):
+1. `starter.py` runs and prints a bigram-sampled sequence.
+2. `bpe_starter.py` is filled in such that `python test.py` shows all four tests green.
+3. `hand_math/` contains your derivation of why the bigram NN with cross-entropy loss converges to the empirical count table. *(One paragraph + the partial derivative is enough; the result is that the gradient of `-log p_θ(b|a)` w.r.t. `θ_{a,b}` is zero exactly when `p_θ` equals the empirical distribution.)*
+4. `evidence/test_output.txt` contains the output of `python test.py` showing all green.
+5. `notes.md` exists with at least one "thing I got stuck on."
 
 ✅ Next: [Module 4 — Self-Attention](../04_attention_scratch/README.md)

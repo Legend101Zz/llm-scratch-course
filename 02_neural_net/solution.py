@@ -1,8 +1,13 @@
 """Module 2 — MLP solution."""
 
-import random, sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "01_autograd"))
-from solution import Value
+import random, importlib.util, os
+_spec = importlib.util.spec_from_file_location(
+    "autograd_solution",
+    os.path.join(os.path.dirname(__file__), "..", "01_autograd", "solution.py"),
+)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+Value = _mod.Value
 
 random.seed(1337)
 

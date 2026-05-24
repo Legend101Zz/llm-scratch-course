@@ -1,24 +1,28 @@
 """Module 2 — MLP on top of your autograd. Fill TODOs."""
 
 import random
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "01_autograd"))
-from solution import Value  # use the reference engine so you don't debug both at once
+import math
+import importlib.util, os
+_spec = importlib.util.spec_from_file_location(
+    "autograd_solution",
+    os.path.join(os.path.dirname(__file__), "..", "01_autograd", "solution.py"),
+)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+Value = _mod.Value  # use the reference engine so you don't debug both at once
 
 random.seed(1337)
 
 
 class Neuron:
     def __init__(self, n_in, nonlin=True):
-        # TODO: create n_in weights as Values randomly in [-1, 1], plus a bias Value.
-        self.w = []         # list[Value]
-        self.b = None       # Value
+        self.w = [ Value(random.uniform(-1,1)) for _ in range(n_in)]         # list[Value]
+        self.b = Value(0.0)       # Value
         self.nonlin = nonlin
 
     def __call__(self, x):
-        # x: list[Value or number]
-        # TODO: compute sum(w_i * x_i) + b, then tanh() if self.nonlin
-        pass
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
 
     def parameters(self):
         return self.w + [self.b]
@@ -27,7 +31,7 @@ class Neuron:
 class Layer:
     def __init__(self, n_in, n_out, nonlin=True):
         # TODO: list of n_out Neurons, each taking n_in inputs.
-        self.neurons = []
+        self.neurons = [Neuron(n_in,nonlin) for _ in range(n_out)]
 
     def __call__(self, x):
         outs = [n(x) for n in self.neurons]
@@ -41,7 +45,8 @@ class MLP:
     def __init__(self, n_in, hidden_sizes):
         # hidden_sizes example: [4, 4, 1]  → two hidden + 1-output layer
         sizes = [n_in] + hidden_sizes
-        self.layers = []
+        self.layers = [ Layer(sizes[i] , sizes[i+1] , nonlin= (i != len(hidden_sizes)-1)) 
+                        for i in range(len(hidden_sizes))]
         # TODO: build len(hidden_sizes) Layers. Last layer is linear (nonlin=False).
 
     def __call__(self, x):
@@ -66,21 +71,24 @@ if __name__ == "__main__":
     for step in range(500):
         # forward + loss
         # TODO: compute predictions, then MSE loss as a single Value
-        # preds = [model(x) for x in xs]
-        # loss = sum((p - y)**2 for p, y in zip(preds, ys)) * (1.0 / len(xs))
+        preds = [model(x) for x in xs]
+        loss = sum((p - y)**2 for p, y in zip(preds, ys)) * (1.0 / len(xs))
 
         # zero grads
         # TODO: for p in model.parameters(): p.grad = 0.0
-
+        for p in model.parameters():
+            p.grad = 0.0
         # backward
-        # TODO: loss.backward()
+        loss.backward()
 
         # update
-        # TODO: for p in model.parameters(): p.data -= lr * p.grad
+        for p in model.parameters(): 
+            p.data -= lr * p.grad
 
         if step % 50 == 0:
-            # print(f"step {step:4d}  loss {loss.data:.6f}")
-            pass
+            print(f"step {step:4d}  loss {loss.data:.6f}")
+ 
 
     # print final predictions
-    # for x, y in zip(xs, ys): print(x, "→", model(x).data, "(target", y, ")")
+    for x, y in zip(xs, ys):
+        print(x, "→", round(model(x).data, 3), "(target", y, ")")
