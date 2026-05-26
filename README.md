@@ -59,22 +59,26 @@ Full arc with per-module deliverables: [`COURSE_MAP.md`](COURSE_MAP.md).
 ├── REVIEW.md                ← spaced-repetition queue
 ├── MENTOR_LOG.md            ← terse internal journal
 ├── JOURNEY.md               ← narrative TOC
+├── PHASE8_FRAMEWORK.md      ← Phase 8 plan: "build your own PyTorch" (placeholder, fleshed out at end of Phase 6)
 ├── devlog/                  ← one entry per session
 ├── glossary.md              ← terms defined once
 ├── debugging.md             ← failure modes cheatsheet
 ├── requirements.txt
 │
 │   ──── Phase 0 modules (from-scratch core) ────
-├── 00_start/                ← mental model + setup
-├── 01_autograd/             ← Value class + backprop ✅
-├── 02_neural_net/           ← MLP on your autograd ✅
-├── 03_tokenizer_bigram/     ← char + BPE + bigram model 🟨 (BPE patched in)
-├── 04_attention_scratch/    ← QKV attention in NumPy ✅ (+ roofline section)
-├── 05_transformer_scratch/  ← full block in NumPy ✅
-├── 06_pytorch_crash/        ← PyTorch deep-dive (4 sub-docs + drills) ✅
-├── 07_gpt_pytorch/          ← mini-GPT (to be redesigned as Phase 0 capstone)
+├── phase0/
+│   ├── PHASE0_CLOSURE.md          ← friendly closing checklist (read first if mid-Phase-0)
+│   ├── 00_start/                  ← mental model + setup
+│   ├── 01_autograd/               ← Value class + backprop ✅
+│   ├── 02_neural_net/             ← MLP on your autograd ✅
+│   ├── 03_tokenizer_bigram/       ← char + BPE + bigram model 🟨 (BPE patched in)
+│   ├── 04_attention_scratch/      ← QKV attention in NumPy ✅ (+ roofline section)
+│   ├── 05_transformer_scratch/    ← full block in NumPy ✅
+│   ├── 06_pytorch_crash/          ← PyTorch deep-dive (4 sub-docs + drills) ✅
+│   └── 07_phase0_capstone/        ← tiny GPT (numpy + torch) ✅ Phase 0 capstone
 │
-│   ──── Phase 1+ modules ────
+│   ──── Phase 1+ legacy stubs (sprint-era, will be rewritten per D-0006) ────
+├── 07_gpt_pytorch/          ← (legacy — replaced by phase0/07_phase0_capstone/)
 ├── 08_train_colab/          ← (skeletal — Phase 1.1 will rewrite)
 ├── 09_finetune_lora/        ← (skeletal — Phase 1.4 will rewrite)
 ├── 10_deepseek_r1/          ← (skeletal — Phase 2 will rewrite)
@@ -110,9 +114,9 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Then read [`COURSE_MAP.md`](COURSE_MAP.md) for the full arc, or jump into [`00_start/`](00_start/) and begin.
+Then read [`COURSE_MAP.md`](COURSE_MAP.md) for the full arc, or jump into [`phase0/00_start/`](phase0/00_start/) and begin.
 
-**Currently mid-Phase 0?** → [`PHASE0_CLOSURE.md`](PHASE0_CLOSURE.md) is the friendly checklist that walks you through everything from venv setup to the cold quiz that gates Phase 1.
+**Currently mid-Phase 0?** → [`phase0/PHASE0_CLOSURE.md`](phase0/PHASE0_CLOSURE.md) is the friendly checklist that walks you through everything from venv setup to the cold quiz that gates Phase 1.
 
 For Phase 1 onward you'll need [Google Colab](https://colab.research.google.com) (T4 free tier) or similar cheap-GPU access; for Phases 4–5 you'll need TPU access (Colab free tier suffices for the graded JAX exercises).
 

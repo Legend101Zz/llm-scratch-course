@@ -22,7 +22,7 @@ Phase 0 is fully scaffolded. The bootstrap + audit + gap-closure work in this se
 ### Gap closure (session 02 — after honest audit)
 - ✅ Module 2: 3-test parity file (forward, per-parameter gradients, training convergence). Closes the most glaring Phase 0 gap.
 - ✅ `hand_math/` + `evidence/` folders with READMEs in every Phase-0 module (Modules 1–6) — each README specifies exactly what derivations + outputs go there.
-- ✅ **`07_phase0_capstone/`** — tiny GPT assembled from Modules 4/5 components:
+- ✅ **`phase0/07_phase0_capstone/`** — tiny GPT assembled from Modules 4/5 components:
   - `numpy_gpt.py` — forward-only NumPy GPT (verified runs, 112k params on V=65, d=64, h=4, 2 layers)
   - `torch_gpt.py` — trainable PyTorch GPT with matching architecture
   - `test.py` — 3 parity tests (param count, forward to 1e-4, full-stack causal invariant)
@@ -37,21 +37,22 @@ Phase 0 is fully scaffolded. The bootstrap + audit + gap-closure work in this se
 
 ## What's next (in order)
 
-> 👉 **Full walkthrough for the user:** [`PHASE0_CLOSURE.md`](PHASE0_CLOSURE.md) — friendly step-by-step runbook covering venv setup, running every parity test, training the capstone, hand-math derivations, and the cold quiz. **Read this first** at the start of the next session.
+> 👉 **Full walkthrough for the user:** [`phase0/PHASE0_CLOSURE.md`](phase0/PHASE0_CLOSURE.md) — friendly step-by-step runbook covering venv setup, running every parity test, training the capstone, hand-math derivations, and the cold quiz. **Read this first** at the start of the next session.
 
 1. **User: install torch in venv + run all parity tests + capture `evidence/` outputs.**
    ```bash
    cd ~/Desktop/llm-scratch/course
    source .venv/bin/activate
    pip install -r requirements.txt   # if not already done
+   # All Phase 0 modules now live in phase0/
+   cd phase0
    # Run each module's test:
    for m in 01_autograd 02_neural_net 03_tokenizer_bigram 04_attention_scratch 05_transformer_scratch; do
      echo "=== $m ==="
-     cd $m && USE_SOLUTION=1 python test.py > evidence/test_output.txt 2>&1
-     cd ..
+     (cd $m && USE_SOLUTION=1 python test.py > evidence/test_output.txt 2>&1)
    done
-   cd 06_pytorch_crash && python tensor_drills_solution.py > evidence/drills_output.txt 2>&1 && cd ..
-   cd 07_phase0_capstone && python test.py > evidence/parity_output.txt 2>&1 && python train.py && cd ..
+   (cd 06_pytorch_crash && python tensor_drills_solution.py > evidence/drills_output.txt 2>&1)
+   (cd 07_phase0_capstone && python test.py > evidence/parity_output.txt 2>&1 && python train.py)
    ```
    Then commit + push the evidence files.
 
@@ -76,7 +77,7 @@ Phase 0 is fully scaffolded. The bootstrap + audit + gap-closure work in this se
 
 ## Stalled / parked items
 
-- The old `07_gpt_pytorch/` directory remains in the tree (sprint-era skeletal content). Per D-0006 it'll be rewritten when Phase 1 starts. **Don't be confused** by the two `07_*` directories — `07_phase0_capstone/` is the active Phase 0 closure module; `07_gpt_pytorch/` is legacy.
+- The old `07_gpt_pytorch/` directory remains in the tree at course root (sprint-era skeletal content). Per D-0006 it'll be rewritten when Phase 1 starts. The active Phase 0 capstone is `phase0/07_phase0_capstone/` — the legacy `07_gpt_pytorch/` at root is the one to ignore until Phase 1.
 
 ## Session log (most recent first)
 

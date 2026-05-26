@@ -33,7 +33,7 @@ For a bigram model trained to convergence, **the optimal table is just the empir
 ### Build BPE yourself (required — not optional)
 
 > Originally this module had BPE as a 5-min "optional, here's the code" aside.
-> Under the new framing (see [`../CONVENTIONS.md`](../CONVENTIONS.md)), Phase 0 modules implement everything from scratch with a parity test. So BPE is now a proper exercise.
+> Under the new framing (see [`../../CONVENTIONS.md`](../../CONVENTIONS.md)), Phase 0 modules implement everything from scratch with a parity test. So BPE is now a proper exercise.
 
 You'll fill in **[`bpe_starter.py`](bpe_starter.py)** — `train_bpe`, `encode`, `decode`, plus the `get_pairs` and `merge` helpers — ~60 lines total. The skeleton has detailed comments walking you through the algorithm; the docstring at the top lists the 5 algorithmic steps you need to implement.
 
@@ -81,7 +81,7 @@ After `starter.py` works, do the BPE exercise above (`bpe_starter.py` + `test.py
 
 ## How this module is "done"
 
-Per [`../CONVENTIONS.md`](../CONVENTIONS.md):
+Per [`../../CONVENTIONS.md`](../../CONVENTIONS.md):
 1. `starter.py` runs and prints a bigram-sampled sequence.
 2. `bpe_starter.py` is filled in such that `python test.py` shows all four tests green.
 3. `hand_math/` contains your derivation of why the bigram NN with cross-entropy loss converges to the empirical count table. *(One paragraph + the partial derivative is enough; the result is that the gradient of `-log p_θ(b|a)` w.r.t. `θ_{a,b}` is zero exactly when `p_θ` equals the empirical distribution.)*

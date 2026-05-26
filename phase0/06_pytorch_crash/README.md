@@ -109,4 +109,4 @@ Compare line-by-line with `02_neural_net/solution.py`. The math is identical; on
 - [Edward Yang — PyTorch internals](http://blog.ezyang.com/2019/05/pytorch-internals/) — what's actually happening under the hood.
 - [Aladdin Persson's PyTorch series](https://www.youtube.com/playlist?list=PLhhyoLH6IjfxeoooqP9rhU3HJIAVAJ3Vz) — video walk-throughs that complement these READMEs.
 
-✅ Next: [Module 7 — Mini-GPT in PyTorch](../07_gpt_pytorch/README.md). The big one.
+✅ Next: [Module 7 — Phase 0 capstone (tiny GPT)](../07_phase0_capstone/README.md). The big one — assembles every from-scratch component into a working LM, parity-tested against PyTorch.

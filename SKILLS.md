@@ -24,52 +24,52 @@
 
 | Skill | Level | Proof |
 |---|---|---|
-| Backprop / scalar autograd | **3** | [`01_autograd/test.py`](01_autograd/test.py) — parity vs PyTorch on a complex expression. Hand-math derivation pending → level 4. |
-| Forward-mode AD vs reverse-mode AD | 1 | Conceptual only. Distinction explained in `01_autograd/README.md`. |
-| Multi-layer perceptron from scratch | **3** | [`02_neural_net/solution.py`](02_neural_net/solution.py) + [`test.py`](02_neural_net/test.py) — XOR loss → 0, **per-parameter gradients match PyTorch to 1e-5**. Hand-math pending → level 4. |
-| Cross-entropy loss derivation | 2 | Stated in `00_start/README.md`; not yet derived by hand. |
-| Numerical stability (log-sum-exp, softmax shift) | 1 | Implicit in `04_attention_scratch/solution.py`'s `softmax`. Not derived by hand. |
-| Initialization (Xavier, Kaiming, GPT-2 std=0.02) | 1 | Discussed in `06_pytorch_crash/03_nn_module.md`. Not yet ablated experimentally. |
+| Backprop / scalar autograd | **3** | [`phase0/01_autograd/test.py`](01_autograd/test.py) — parity vs PyTorch on a complex expression. Hand-math derivation pending → level 4. |
+| Forward-mode AD vs reverse-mode AD | 1 | Conceptual only. Distinction explained in `phase0/01_autograd/README.md`. |
+| Multi-layer perceptron from scratch | **3** | [`phase0/02_neural_net/solution.py`](02_neural_net/solution.py) + [`test.py`](02_neural_net/test.py) — XOR loss → 0, **per-parameter gradients match PyTorch to 1e-5**. Hand-math pending → level 4. |
+| Cross-entropy loss derivation | 2 | Stated in `phase0/00_start/README.md`; not yet derived by hand. |
+| Numerical stability (log-sum-exp, softmax shift) | 1 | Implicit in `phase0/04_attention_scratch/solution.py`'s `softmax`. Not derived by hand. |
+| Initialization (Xavier, Kaiming, GPT-2 std=0.02) | 1 | Discussed in `phase0/06_pytorch_crash/03_nn_module.md`. Not yet ablated experimentally. |
 
 ## Tokenization
 
 | Skill | Level | Proof |
 |---|---|---|
-| Char-level tokenization | **3** | `03_tokenizer_bigram/solution.py` — encode/decode round-trip, bigram NLL computed. |
-| BPE from scratch | **2** | `03_tokenizer_bigram/bpe.py` exists as reference; not yet refactored to `starter.py` + parity test. Level 3 once tests pass. |
+| Char-level tokenization | **3** | `phase0/03_tokenizer_bigram/solution.py` — encode/decode round-trip, bigram NLL computed. |
+| BPE from scratch | **2** | `phase0/03_tokenizer_bigram/bpe.py` exists as reference; not yet refactored to `starter.py` + parity test. Level 3 once tests pass. |
 | Comparing to `tiktoken` | 1 | A `print(tiktoken.encode(...))` line in the README. No structured comparison yet. |
 
 ## Attention & transformer architecture
 
 | Skill | Level | Proof |
 |---|---|---|
-| Single-head attention from scratch (NumPy) | **3** | `04_attention_scratch/solution.py` + `test.py` parity vs PyTorch to 1e-5. |
+| Single-head attention from scratch (NumPy) | **3** | `phase0/04_attention_scratch/solution.py` + `test.py` parity vs PyTorch to 1e-5. |
 | Multi-head attention from scratch | **3** | Same; multi-head also parity-tested to 1e-5. **Also: rebuilt in PyTorch as Module 6 drill 11** → confirms numpy↔torch round-trip. |
-| Roofline analysis for attention | **2** | Worked T4 calculation committed in `04_attention_scratch/README.md` (AI=5 vs knee=25 → memory-bound). Level 3 once user commits their own version + alternate-shape calculation in `evidence/roofline.md`. |
+| Roofline analysis for attention | **2** | Worked T4 calculation committed in `phase0/04_attention_scratch/README.md` (AI=5 vs knee=25 → memory-bound). Level 3 once user commits their own version + alternate-shape calculation in `evidence/roofline.md`. |
 | Causal masking | 2 | Implemented; not yet hand-derived (why mask before softmax). |
-| Q/K/V split — purpose | 2 | Explained in detail in `04_attention_scratch/README.md`. Cold-quiz verification pending. |
+| Q/K/V split — purpose | 2 | Explained in detail in `phase0/04_attention_scratch/README.md`. Cold-quiz verification pending. |
 | 1/√d_k scaling — derivation | 2 | Discussed numerically in README. Not yet hand-derived. |
 | Multi-head specialization (heads as circuits) | 1 | Mentioned in README. No experimental verification (haven't visualized attention patterns). |
-| LayerNorm / RMSNorm | 2 | LayerNorm impl in `05_transformer_scratch/solution.py`. RMSNorm not implemented. Backward not derived. |
-| Pre-norm vs post-norm | 2 | Discussed in `05_transformer_scratch/README.md`. Cold-quiz verification pending. |
+| LayerNorm / RMSNorm | 2 | LayerNorm impl in `phase0/05_transformer_scratch/solution.py`. RMSNorm not implemented. Backward not derived. |
+| Pre-norm vs post-norm | 2 | Discussed in `phase0/05_transformer_scratch/README.md`. Cold-quiz verification pending. |
 | Residual stream framing | 2 | Mentioned. No experimental ablation. |
 | FFN as key-value memory (Geva et al.) | 1 | Discussed in README. Not reproduced. |
-| Full transformer block forward pass | **3** | `05_transformer_scratch/solution.py` + `test.py` (gelu/LN/FFN/block all parity-tested + residual-path verified). |
-| Full GPT (stack of blocks + embeddings + LM head) | **3** | `07_phase0_capstone/{numpy_gpt.py, torch_gpt.py, test.py}` — 112k-param GPT, numpy↔torch forward parity to 1e-4, full-stack causal invariant verified. Training script committed; loss-curve generation pending (user runs `train.py`). |
-| Weight tying (lm_head.weight = token_emb.weight) | 1 | Discussed in `06_pytorch_crash/03_nn_module.md`. Not yet implemented in capstone (kept separate for cleaner parity proof). |
+| Full transformer block forward pass | **3** | `phase0/05_transformer_scratch/solution.py` + `test.py` (gelu/LN/FFN/block all parity-tested + residual-path verified). |
+| Full GPT (stack of blocks + embeddings + LM head) | **3** | `phase0/07_phase0_capstone/{numpy_gpt.py, torch_gpt.py, test.py}` — 112k-param GPT, numpy↔torch forward parity to 1e-4, full-stack causal invariant verified. Training script committed; loss-curve generation pending (user runs `train.py`). |
+| Weight tying (lm_head.weight = token_emb.weight) | 1 | Discussed in `phase0/06_pytorch_crash/03_nn_module.md`. Not yet implemented in capstone (kept separate for cleaner parity proof). |
 
 ## PyTorch
 
 | Skill | Level | Proof |
 |---|---|---|
-| Tensors, dtypes, devices | **2** | Walkthrough in `06_pytorch_crash/01_tensors.md`. Drills not yet completed by user. |
+| Tensors, dtypes, devices | **2** | Walkthrough in `phase0/06_pytorch_crash/01_tensors.md`. Drills not yet completed by user. |
 | `view` / `reshape` / `permute` / `contiguous` | 2 | Same. |
 | Broadcasting (incl. attention shape examples) | 2 | Same. |
 | `einsum` | 1 | Mentioned. Not drilled. |
-| Autograd dynamic graph mental model | 2 | Walkthrough in `02_autograd.md`. Drills pending. |
+| Autograd dynamic graph mental model | 2 | Walkthrough in `phase0/06_pytorch_crash/02_autograd.md`. Drills pending. |
 | `requires_grad`, leaf vs intermediate | 2 | Same. |
 | `.detach()` / `no_grad` / `inference_mode` | 1 | Discussed; not used in practice yet. |
-| Custom `autograd.Function` + STE | 1 | Discussed in `02_autograd.md`; not yet implemented. |
+| Custom `autograd.Function` + STE | 1 | Discussed in `phase0/06_pytorch_crash/02_autograd.md`; not yet implemented. |
 | `nn.Module` (Parameter, buffer, train/eval) | 2 | Walkthrough in `03_nn_module.md`. |
 | Optimizers (SGD / Adam / AdamW + param groups) | 1 | Discussed in `04_optim_data_gpu.md`. Not used in a real training loop yet. |
 | Dataset / DataLoader / collate_fn | 1 | Discussed. Not used. |
@@ -82,7 +82,7 @@
 
 | Skill | Level | Proof |
 |---|---|---|
-| Training loop (forward / loss / zero_grad / backward / step) | 2 | Walkthrough in `06_pytorch_crash/04_optim_data_gpu.md`. Not yet run end-to-end on a real model. |
+| Training loop (forward / loss / zero_grad / backward / step) | 2 | Walkthrough in `phase0/06_pytorch_crash/04_optim_data_gpu.md`. Not yet run end-to-end on a real model. |
 | Warmup + cosine LR schedule | 1 | Discussed. Not implemented. |
 | Gradient clipping | 1 | Discussed. Not implemented. |
 | Debugging non-convergence (LR / init / mask bugs) | 0 | Phase 1.3 deliverable. |

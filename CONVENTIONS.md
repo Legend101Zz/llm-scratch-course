@@ -81,7 +81,7 @@ For every from-scratch numerical module (NumPy → PyTorch), `test.py` must:
 3. Assert numerical match: forward to `1e-5` for float32 / `1e-6` for float64; gradients to the same tolerance (where backward exists).
 4. Print both values side-by-side so failures are diagnosable, not just `assertion error`.
 
-Reference template: see [`01_autograd/test.py`](01_autograd/test.py) — it compares the `Value` engine to `torch.tensor(requires_grad=True)` on a complex expression and prints `forward / a.grad / b.grad` for both.
+Reference template: see [`phase0/01_autograd/test.py`](phase0/01_autograd/test.py) — it compares the `Value` engine to `torch.tensor(requires_grad=True)` on a complex expression and prints `forward / a.grad / b.grad` for both.
 
 **For modules where backward isn't implemented from scratch** (e.g. Module 5's transformer block in NumPy, where we only do forward): the parity test runs forward only, but loads the *same weights* into a PyTorch reference and checks the forward output. The PyTorch reference is what eventually becomes the Module 7 implementation, so writing it now is not wasted.
 

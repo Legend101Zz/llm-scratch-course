@@ -22,16 +22,16 @@ The user **doesn't need to peek at the answer key** — the answer key is in the
 
 | ID | Q | Source | First asked | Last asked | Next due | Streak | History |
 |---|---|---|---|---|---|---|---|
-| R-001 | Without looking, why do attention scores get divided by √d_k? Don't restate "for stability" — derive it. | `04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-002 | The softmax in attention is taken over which dimension, and what would break if you flipped it (softmax over queries instead of over keys)? | `04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-003 | Explain the *three* reasons Q, K, and V are separate linear projections instead of one shared projection or just `X` itself. | `04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-004 | Why is the causal mask applied **before** softmax and not after? Demonstrate with a 2-token example what goes wrong if you flip the order. | `04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-005 | In a pre-norm transformer block, draw the residual stream and the LayerNorm placements. Where is the "gradient highway" and why does pre-norm protect it better than post-norm? | `05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-006 | The FFN inside a transformer block expands `d` → `4d` → `d`. Why 4×? Give the empirical and the "key-value memory" framings. | `05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-007 | What does LayerNorm normalize over, exactly — which axis? Why is that the right axis for transformers (vs BatchNorm)? | `05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-008 | Sketch the multi-head attention forward pass with explicit shapes: input `(B, T, d)` → output `(B, T, d)`, all intermediate shapes labeled. | `04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
-| R-009 | Why does scalar (reverse-mode) autograd work in two passes — forward then backward — and why couldn't you just compute gradients on the forward pass? (Hint: many-to-one structure.) | `01_autograd/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
-| R-010 | What does the cross-entropy loss become for a single token if the model assigns probability 0.0001 to the correct answer? (Numeric answer expected.) | `00_start/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
+| R-001 | Without looking, why do attention scores get divided by √d_k? Don't restate "for stability" — derive it. | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-002 | The softmax in attention is taken over which dimension, and what would break if you flipped it (softmax over queries instead of over keys)? | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-003 | Explain the *three* reasons Q, K, and V are separate linear projections instead of one shared projection or just `X` itself. | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-004 | Why is the causal mask applied **before** softmax and not after? Demonstrate with a 2-token example what goes wrong if you flip the order. | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-005 | In a pre-norm transformer block, draw the residual stream and the LayerNorm placements. Where is the "gradient highway" and why does pre-norm protect it better than post-norm? | `phase0/05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-006 | The FFN inside a transformer block expands `d` → `4d` → `d`. Why 4×? Give the empirical and the "key-value memory" framings. | `phase0/05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-007 | What does LayerNorm normalize over, exactly — which axis? Why is that the right axis for transformers (vs BatchNorm)? | `phase0/05_transformer_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-008 | Sketch the multi-head attention forward pass with explicit shapes: input `(B, T, d)` → output `(B, T, d)`, all intermediate shapes labeled. | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
+| R-009 | Why does scalar (reverse-mode) autograd work in two passes — forward then backward — and why couldn't you just compute gradients on the forward pass? (Hint: many-to-one structure.) | `phase0/01_autograd/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
+| R-010 | What does the cross-entropy loss become for a single token if the model assigns probability 0.0001 to the correct answer? (Numeric answer expected.) | `phase0/00_start/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
 
 ---
 

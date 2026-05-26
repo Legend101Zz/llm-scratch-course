@@ -95,7 +95,7 @@ Mostly real words, mostly grammatical, sometimes coherent. **Not** a real reason
 
 ## How this module is "done"
 
-Per [`../CONVENTIONS.md`](../CONVENTIONS.md):
+Per [`../../CONVENTIONS.md`](../../CONVENTIONS.md):
 1. `python test.py` passes all three parity tests.
 2. `python train.py` completes; train loss drops below 2.0 nats by step 2000.
 3. `hand_math/` contains your derivation of the full-stack causal-mask invariant (see hand_math/README.md for what specifically to derive).

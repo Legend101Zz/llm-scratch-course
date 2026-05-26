@@ -101,3 +101,40 @@
 **Exception:** `extras/` and `papers/` stay as-is. They're reference material, not core modules.
 
 **Revisit when.** When entering each affected phase.
+
+---
+
+## D-0007 · 2026-05-27 · Phase 8 reframed as "build your own PyTorch" (post-learning, not interwoven)
+
+**Decision.** Phase 8 is reframed from the vague "Capstone & signaling artifact" into a concrete 3–4 month framework project: **build your own PyTorch-style ML library from scratch**, end-to-end (autograd → nn modules → optimizers → kernels → inference), train a small (~12M-param) LM on it, publish.
+
+Crucially: the framework is **not** built incrementally as a "deposit" from each prior phase. Phases 0–7 stay pure learning. The framework happens *after* all the learning has been done, in a dedicated Phase 8 project that rebuilds (cleanly, integrated, opinionated) what was already built once (messily, in isolation, for learning) across Phases 1–7.
+
+Phase 8 has 6 stages:
+- **8.1 — Core (ML side):** vectorized `Tensor` + autograd, `nn.Module` system, primitives, parity tests.
+- **8.2 — Training:** optimizers, schedulers, gradient clipping, mixed precision, checkpoint/resume, train a small transformer.
+- **8.3 — Kernels (GPU side):** port Phase 4's CUDA/Triton kernels into the framework as the GPU backend.
+- **8.4 — Inference:** port Phase 6's KV cache + paged attention + continuous batching into a `framework.serve` module.
+- **8.5 — Train a real model:** ~12M-param LM end-to-end on your framework, evaluated.
+- **8.6 — Publish:** README polish, blog post, screen-recording, Twitter. Hook decision (if any) happens *here*, post-build.
+
+**Why.**
+- **Learning-first beats artifact-first.** The user explicitly chose to keep Phases 0–7 focused on learning, not on framework infrastructure. Interweaving framework discipline across every phase would slow learning and pull attention toward productization concerns before the underlying ideas are solid.
+- **Build twice = much better second time.** Phases 1–7 build each component once for learning (Phase 4 kernels, Phase 6 inference, etc.). Phase 8 builds them *again*, integrated, with the benefit of hindsight — cleaner APIs, fewer dead ends, an opinionated POV. This is the same pattern as Karpathy's `nanoGPT` (the "second pass" after years of building one-off models).
+- **Reduces half-finished-artifact risk.** If the framework had to grow phase-by-phase, abandoning the course at Phase 5 would leave a half-built repo as bad signal. With Phase 8 standalone, partial completion just means "skipped the artifact," not "shipped something broken."
+- **The hook decision is deferred to Phase 8.6.** No commitment now to a unique angle (specific kernel, novel backend, minimalism play). By Phase 8 the user will know what's interesting about their build and can pick a hook *from evidence*, not speculation. If no hook emerges, the artifact is still "I built a working ML framework end-to-end with proof for every piece" — which is itself signal.
+
+**What this changes in the existing plan:**
+- **No new module in Phases 1–7.** They stay exactly as in COURSE_MAP.md.
+- **Phase 4 and Phase 6 awareness shift.** Each kernel/inference primitive in those phases is now written knowing "I will rewrite this cleanly in Phase 8." So: write tests carefully, write notes about API mistakes, document gotchas. Phase 4/6 code is the *draft*; Phase 8 code is the *publication*. This actually *speeds up* Phases 4 and 6 because polish isn't required.
+- **Phase 8 row in COURSE_MAP rewritten** to show the 6 stages with rough duration estimates.
+- **New file `PHASE8_FRAMEWORK.md`** committed now as a forward placeholder. It gets fleshed out incrementally as Phases 4 and 6 surface design ideas; full plan when we reach Phase 8.
+
+**What this implies for total course time.**
+The framework adds ~3–4 months on top of Phases 0–7. Total course time becomes ~12–18 months of focused work — which matches Feinberg's "real skills + real artifact" framing. If time has to compress, cut Phase 7 (agents) or shrink Phase 4, not Phase 8.
+
+**Reference projects considered.**
+- [xames3/slowtorch](https://github.com/xames3/slowtorch) — PyTorch reimplementation in pure Python. Pedagogical reference.
+- [mni-ml/framework](https://github.com/mni-ml/framework) — Rust backend + custom CUDA kernels, trained a 12M-param LLM. The shape of artifact we're aiming for, scaled to our skill profile.
+
+**Revisit when.** End of Phase 4 (the kernels phase). At that point we'll know if the GPU side of Phase 8 is realistically scoped at 3–4 weeks or needs more. Also revisit at end of Phase 6 (inference) for the same reason on `framework.serve`.

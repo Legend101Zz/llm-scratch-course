@@ -415,4 +415,4 @@ def evaluate(model, val_loader):
 
 These are post-course topics. The 11 sections above cover everything you need for Modules 7-10.
 
-✅ Back to [Module 6 README](README.md). Or onward to [Module 7 — Mini-GPT](../07_gpt_pytorch/README.md).
+✅ Back to [Module 6 README](README.md). Or onward to [Module 7 — Phase 0 capstone](../07_phase0_capstone/README.md).

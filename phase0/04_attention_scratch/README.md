@@ -232,7 +232,7 @@ Confirm token 0 attends only to token 0. Token 1 attends to {0, 1}. Token 2 atte
 
 ## 12. Roofline — is attention memory-bound or compute-bound?
 
-> 🛠️ **Systems lens.** Per [`../CONVENTIONS.md`](../CONVENTIONS.md), every hardware-touching module must answer: *what limits this op?* You should be able to do this calculation in your sleep by Phase 4 (it's the single skill `frontier-lab.md` says most directly gets people hired). Start now.
+> 🛠️ **Systems lens.** Per [`../../CONVENTIONS.md`](../../CONVENTIONS.md), every hardware-touching module must answer: *what limits this op?* You should be able to do this calculation in your sleep by Phase 4 (it's the single skill `frontier-lab.md` says most directly gets people hired). Start now.
 
 Let's pick a small concrete shape: `B = 1` (one sequence), `T = 512` (sequence length), `d = 64` (embedding dim), `h = 8` heads → `d_k = d/h = 8`. All `fp32` (4 bytes per element).
 

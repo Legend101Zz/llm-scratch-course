@@ -29,7 +29,7 @@ Everything in Phases 0–8 below routes toward that endpoint.
 | 5 | Quantization | Walk the quality↔perf tradeoff | INT8 path + LLM.int8() reproduction + **Feinberg Exercise B** capstone (Pallas `ragged_dot` beater) | ⬜ |
 | 6 | Inference engine (above the stack pt 1) | Build a nano-vLLM from scratch | KV cache → paged attention → continuous batching → benchmark vs HF | ⬜ |
 | 7 | Agents (above the stack pt 2) | Rigorous, measured agent experiments | Hypothesis-driven experiment with metric, write-up in the style of the Berkeley ADRS paper | ⬜ |
-| 8 | Capstone | Public artifact + recorded evidence | A repo + a demo + the videos `frontier-lab.md` asks for | ⬜ |
+| 8 | **Build your own PyTorch** | Dedicated 3–4 month framework project: autograd → nn → optim → kernels → inference, train a 12M-param LM on it, publish | Your own ML library + a trained model + a public artifact + the videos `frontier-lab.md` asks for | ⬜ |
 
 ---
 
@@ -39,7 +39,7 @@ Everything in Phases 0–8 below routes toward that endpoint.
 
 **Prerequisite check.** You can write down the cross-entropy loss without looking; you know what a gradient is; you've heard of softmax. (If any is shaky → 3Blue1Brown's NN series, then return.)
 
-**Phase 0 capstone.** A new module `07_phase0_capstone/` (to be created at end of this phase) that:
+**Phase 0 capstone.** Module `phase0/07_phase0_capstone/` that:
 - Imports the NumPy `Value` engine, attention, and block from Modules 1, 4, 5.
 - Stacks N=4 blocks, embeds 65-char vocab, runs forward on tinyshakespeare.
 - Loss drops on a 200-step training run (NumPy autograd — slow but real).
@@ -236,21 +236,32 @@ After all four, mentor promotes to Phase 1.
 
 ---
 
-# Phase 8 — Capstone & signaling artifact ⬜
+# Phase 8 — Build your own PyTorch ⬜
 
-**Goal.** Consolidate everything into a public artifact that demonstrates something real and reusable. Plus the recorded evidence `frontier-lab.md` asks for.
+**Goal.** A dedicated 3–4 month framework project: build your own PyTorch-style ML library from scratch, end-to-end. Autograd → `nn.Module` → optimizers → GPU kernels → inference engine. Then train a real (~12M-param) LM on *your* framework and publish.
 
-**Frame.** The deliverable is **proof, not a certificate**.
+**Frame.** Phases 0–7 build every component once for learning. Phase 8 builds them *again*, integrated, with the benefit of hindsight — cleaner APIs, fewer dead ends, an opinionated POV. This is the "second pass" that turns scattered learning code into a real artifact. (See [DECISIONS.md D-0007](DECISIONS.md) for the rationale on why this is post-learning, not interwoven.)
 
-| Component | Requirement |
-|---|---|
-| Public repo | Cleaned, documented, README rewritten for an external audience |
-| The signaling artifact | One of: a kernel that beats a published baseline, an inference optimization with measured wins, an agent experiment with a novel result, a quantization recipe with quality data |
-| Handwritten derivations | Scaling-book exercises (all), Chinchilla, FlashAttention sketch |
-| Build recordings | Screen-records of you building the transformer / kernels / agent experiment |
-| The narrative | `JOURNEY.md` reads as a coherent story from "from-scratch autograd" to "edge-of-the-stack contribution" |
+**Reference projects.**
+- [xames3/slowtorch](https://github.com/xames3/slowtorch) — PyTorch reimplementation in pure Python (pedagogical reference).
+- [mni-ml/framework](https://github.com/mni-ml/framework) — Rust backend + custom CUDA kernels, trained a 12M-param LLM (the shape of artifact we're aiming for).
 
-**Phase 8 exits when:** the artifact exists, you've reached out to one or more frontier labs (Feinberg explicitly offers an evaluation), and the choice of where to work becomes yours.
+**New idea introduced.** Library design as its own discipline: API ergonomics, layered abstractions (backend ↔ tensor ↔ nn ↔ train ↔ serve), parity discipline against a reference framework (PyTorch) at every layer, the "build twice" principle.
+
+| Stage | Title | What it delivers | Approx duration |
+|---|---|---|---|
+| 8.1 | **Core (ML side)** | Vectorized `Tensor` + autograd (NumPy backend), `nn.Module` system, primitives (`Linear`, `LayerNorm`, `Embedding`, `MultiheadAttention`). Parity tests against PyTorch on every primitive. | ~3–4 weeks |
+| 8.2 | **Training (ML side)** | Optimizers (`SGD`, `AdamW`), schedulers (cosine + warmup), gradient clipping, mixed precision, checkpoint/resume, evaluation loop. Train a small transformer end-to-end on your framework. | ~2–3 weeks |
+| 8.3 | **Kernels (GPU side)** | Port Phase 4's CUDA matmul + Triton flash-attention into the framework as the GPU backend. `Tensor.cuda()` means *your* CUDA path, not PyTorch's. Roofline'd. | ~3–4 weeks |
+| 8.4 | **Inference (GPU side)** | Port Phase 6's KV cache + paged attention + continuous batching into a `framework.serve` module. Real inference path. | ~2–3 weeks |
+| 8.5 | **Train a real model** | ~12M-param LM, trained end-to-end on *your* framework, evaluated against a baseline. This is the proof. | ~2 weeks |
+| 8.6 | **Publish** | README polish, blog post, screen-recording, Twitter. Hook decision (specific kernel beat, novel backend, minimalism angle, etc.) happens *here*, post-build, from evidence. | ~1 week |
+
+**Capstone (= 8.5 + 8.6).** A working ML framework, a trained model demonstrating it works, a public release. This *is* the signaling artifact `frontier-lab.md` asks for.
+
+**Phase 8 exits when:** the framework is public, the 12M-param model is trained and evaluated against a baseline, the blog post is written, the screen recording is up, and you've reached out to one or more frontier labs (Feinberg explicitly offers an evaluation). The choice of where to work becomes yours.
+
+**Explicit non-requirements.** It does **not** need a unique novel angle to be considered complete — "I built a working ML framework end-to-end with proof for every piece" is itself signal. A hook (specific kernel beat, novel backend, etc.) is nice-to-have, decided in 8.6 from what the build actually surfaced, not committed to up front.
 
 ---
 
@@ -282,11 +293,11 @@ Believe this. The course is long because the goal is long. Each phase has a conc
 
 ## Next concrete step (current state, 2026-05-23 end of day)
 
-Phase 0 is **fully scaffolded** — every module has its prose + starter + solution + parity test (where applicable) + `hand_math/` and `evidence/` READMEs. The Phase 0 capstone (`07_phase0_capstone/`) exists, has been verified to run forward in NumPy, and is ready for the user to run `test.py` + `train.py` in their venv.
+Phase 0 is **fully scaffolded** — every module has its prose + starter + solution + parity test (where applicable) + `hand_math/` and `evidence/` READMEs. All Phase 0 modules now live in `phase0/`. The Phase 0 capstone (`phase0/07_phase0_capstone/`) exists, has been verified to run forward in NumPy, and is ready for the user to run `test.py` + `train.py` in their venv. See [`phase0/PHASE0_CLOSURE.md`](phase0/PHASE0_CLOSURE.md) for the friendly runbook.
 
 **The user's next steps (autonomous):**
 1. Install `requirements.txt` in a venv and run each `test.py` to capture `evidence/test_output.txt`.
-2. Run `07_phase0_capstone/train.py` to produce loss curve + samples.
+2. Run `phase0/07_phase0_capstone/train.py` to produce loss curve + samples.
 3. Write at least one `hand_math/` derivation per module.
 4. Re-issue the cold quiz with the mentor (paused at end of session 02).
 

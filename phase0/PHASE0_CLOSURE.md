@@ -2,7 +2,7 @@
 
 > Read this top to bottom. It tells you (a) what happened in the last two sessions, (b) what *you* need to do to officially close Phase 0, and (c) what to do when something breaks.
 >
-> Cross-refs (in case you want them): [`COURSE_MAP.md`](COURSE_MAP.md) for the full 0→8 arc · [`CONVENTIONS.md`](CONVENTIONS.md) for the per-module rules · [`PROGRESS.md`](PROGRESS.md) for the current state.
+> Cross-refs (in case you want them): [`../COURSE_MAP.md`](../COURSE_MAP.md) for the full 0→8 arc · [`../CONVENTIONS.md`](../CONVENTIONS.md) for the per-module rules · [`../PROGRESS.md`](../PROGRESS.md) for the current state.
 
 ---
 
@@ -12,9 +12,9 @@
 
 This repo used to be called "the 8-hour LLM sprint." Eleven timed modules. Touch every concept, type fast, peek at the solution if you blow past 1.5× the estimate.
 
-**That framing was wrong for the actual goal** (landing at a frontier lab — see [`../frontier-lab.md`](../frontier-lab.md)). Sprint thinking rewards shallow touch-every-concept. Frontier-lab work rewards *deep evidence per concept* — handwritten derivations, parity tests, roofline analyses, measured ablations.
+**That framing was wrong for the actual goal** (landing at a frontier lab — see [`../../frontier-lab.md`](../../frontier-lab.md)). Sprint thinking rewards shallow touch-every-concept. Frontier-lab work rewards *deep evidence per concept* — handwritten derivations, parity tests, roofline analyses, measured ablations.
 
-So: I retired the sprint framing and rebuilt the course as **Phase 0 → Phase 8**, a multi-month journey with deep evidence per phase. The full map lives in [`COURSE_MAP.md`](COURSE_MAP.md).
+So: I retired the sprint framing and rebuilt the course as **Phase 0 → Phase 8**, a multi-month journey with deep evidence per phase. The full map lives in [`../COURSE_MAP.md`](../COURSE_MAP.md).
 
 ### What the last two sessions actually built
 
@@ -36,7 +36,8 @@ Every parity test I wrote *should* pass when you run it. But "should pass" isn't
 ## Part 2 — Where Phase 0 stands right now
 
 ```
-course/
+course/phase0/
+├── PHASE0_CLOSURE.md      (this file)
 ├── 00_start/              ✅ mental model + setup
 ├── 01_autograd/           ✅ scalar Value class + backprop + parity test
 ├── 02_neural_net/         ✅ MLP on Value engine + parity test (forward + per-param-gradient + training)
@@ -44,7 +45,7 @@ course/
 ├── 04_attention_scratch/  ✅ Q/K/V attention + roofline section + 5-test parity file
 ├── 05_transformer_scratch/✅ full block (LN + MHA + FFN + residuals) + 5-test parity file
 ├── 06_pytorch_crash/      ✅ 4 deep-dive docs + 11 drills (drill 11 = numpy↔torch bridge)
-└── 07_phase0_capstone/    ✅ tiny GPT (numpy + torch) + parity test + training script  ⟵  the new piece
+└── 07_phase0_capstone/    ✅ tiny GPT (numpy + torch) + parity test + training script  ⟵  Phase 0 capstone
 ```
 
 Every module also has:
@@ -94,9 +95,11 @@ This proves on disk that the from-scratch implementations actually match PyTorch
 
 #### 2a. Modules 1–5 (parity tests)
 
-Run this from the `course/` directory (your venv must be active):
+Run this from the `course/phase0/` directory (your venv must be active):
 
 ```bash
+cd ~/Desktop/llm-scratch/course/phase0   # all Phase 0 modules now live here
+
 for m in 01_autograd 02_neural_net 03_tokenizer_bigram 04_attention_scratch 05_transformer_scratch; do
   echo "=== $m ==="
   (cd $m && USE_SOLUTION=1 python test.py > evidence/test_output.txt 2>&1)
@@ -113,6 +116,8 @@ What this does:
 If any module fails, **stop and copy the error to me.** A failing test means there's a real bug in either my parity test logic or the solution code — I need to fix it before you keep going.
 
 #### 2b. Module 6 (drills)
+
+Still inside `course/phase0/`:
 
 ```bash
 (cd 06_pytorch_crash && python tensor_drills_solution.py > evidence/drills_output.txt 2>&1)
@@ -146,6 +151,8 @@ You now have `evidence/test_output.txt` in every Phase 0 module — proof that t
 
 ### Task 3 — Train the capstone GPT (this is the satisfying part)
 
+Still inside `course/phase0/`:
+
 ```bash
 (cd 07_phase0_capstone && python train.py)
 ```
@@ -164,7 +171,7 @@ What you should see:
 | 1000 | ~1.9 | recognizing common words like 'the', 'and', 'to' |
 | 2000 | ~1.6 | short Shakespeare-like phrases emerge |
 
-When it finishes, the script writes three files to `07_phase0_capstone/evidence/`:
+When it finishes, the script writes three files to `phase0/07_phase0_capstone/evidence/`:
 - `loss_curve.png` — plot of train + val loss over time
 - `training_log.json` — the raw numbers
 - `sample_generations.txt` — what the model writes when prompted with `"ROMEO:"`, `"\n"`, `"JULIET:"`
@@ -174,7 +181,7 @@ When it finishes, the script writes three files to `07_phase0_capstone/evidence/
 Commit the evidence:
 
 ```bash
-git add 07_phase0_capstone/evidence/
+git add phase0/07_phase0_capstone/evidence/
 git commit -m "Phase 0 capstone: trained 2000 steps + saved loss curve / samples"
 git push
 ```
@@ -185,7 +192,7 @@ git push
 
 #### 4a. Hand-math derivations (at least one per module)
 
-Per [`CONVENTIONS.md`](CONVENTIONS.md), every Phase 0 module needs **at least one handwritten derivation** committed to its `hand_math/` folder. The point: math you've *typed* doesn't stick the way math you've *derived on paper* does. The git log of `hand_math/` is the evidence trail.
+Per [`../CONVENTIONS.md`](../CONVENTIONS.md), every Phase 0 module needs **at least one handwritten derivation** committed to its `hand_math/` folder. The point: math you've *typed* doesn't stick the way math you've *derived on paper* does. The git log of `hand_math/` is the evidence trail.
 
 For each module, read its `hand_math/README.md` — it tells you exactly what to derive. Pick the one you find most interesting per module and do it on paper. **One sheet of paper per module is enough to start.**
 
@@ -205,16 +212,16 @@ Easiest order (cheapest first):
 - Photo from your phone of the page → save as `hand_math/01_chain_rule.jpg` in the relevant module.
 - Transcribe to markdown after you've done the work on paper → save as `hand_math/01_chain_rule.md` with LaTeX math (you can ask Claude or any chatbot to transcribe your photo to LaTeX — that's allowed; the *derivation* must be yours).
 
-After each derivation, commit:
+After each derivation, commit (paths are from course root, so prefix with `phase0/`):
 ```bash
-git add 01_autograd/hand_math/
+git add phase0/01_autograd/hand_math/
 git commit -m "hand_math: chain rule through tanh"
 git push
 ```
 
 #### 4b. The cold quiz
 
-The mentor (this Claude session) posed 8 questions during session 01 about attention + the transformer block. You **paused** them to close the gaps first. They're still queued — in [`REVIEW.md`](REVIEW.md), questions R-001 through R-008.
+The mentor (this Claude session) posed 8 questions during session 01 about attention + the transformer block. You **paused** them to close the gaps first. They're still queued — in [`../REVIEW.md`](../REVIEW.md), questions R-001 through R-008.
 
 To take it: open a new conversation with me and paste:
 
@@ -283,7 +290,7 @@ All four of these are true:
 - ☐ Every Phase 0 module's `hand_math/` folder has at least one derivation file (`.jpg` or `.md`).
 - ☐ You passed the cold quiz (8 questions, grade ≥ 6/8 with no R-001/R-002/R-004 fail — those three are non-negotiable).
 
-When all four are checked, I update [`PROGRESS.md`](PROGRESS.md), bump skill levels in [`SKILLS.md`](SKILLS.md), write the Phase-0-close devlog entry, and open Phase 1.
+When all four are checked, I update [`../PROGRESS.md`](../PROGRESS.md), bump skill levels in [`../SKILLS.md`](../SKILLS.md), write the Phase-0-close devlog entry, and open Phase 1.
 
 ---
 
