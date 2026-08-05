@@ -1,5 +1,11 @@
 # 🥋 LLM-from-Scratch — 8 Hour Sprint Schedule
 
+> ⚠️ **RETIRED 2026-05-23. Historical artifact — kept as trail, not as instructions.**
+> The sprint framing (timed modules, "peek at the solution past 1.5×") was retired in [`DECISIONS.md`](DECISIONS.md) D-0001 because it rewards touching every concept once, which is the opposite of what the goal needs. Superseded again in D-0008: progress is now measured in **capability claims** with 1–2 week timeboxes, not timed modules.
+> **The live spine is [`COURSE_MAP.md`](COURSE_MAP.md).** Nothing below is current.
+
+---
+
 > See [`README.md`](README.md) for the project overview. This file is the detailed schedule + conceptual map.
 
 > Goal: by the end of today you will have **(a)** built an autograd + tiny NN library by hand, **(b)** built a working GPT-2-style transformer in pure Python, **(c)** rebuilt it in PyTorch, **(d)** trained + fine-tuned it on Colab, and **(e)** understood the math + RL ideas behind DeepSeek-R1 well enough to implement a toy version.

@@ -138,3 +138,57 @@ The framework adds ~3–4 months on top of Phases 0–7. Total course time becom
 - [mni-ml/framework](https://github.com/mni-ml/framework) — Rust backend + custom CUDA kernels, trained a 12M-param LLM. The shape of artifact we're aiming for, scaled to our skill profile.
 
 **Revisit when.** End of Phase 4 (the kernels phase). At that point we'll know if the GPU side of Phase 8 is realistically scoped at 3–4 weeks or needs more. Also revisit at end of Phase 6 (inference) for the same reason on `framework.serve`.
+
+---
+
+## D-0008 · 2026-08-05 · Unit of progress = capability claims; dated April 2027 checkpoint; GenHash as a capstone track
+
+**Decision.** Restructure the course around **capability claims** rather than modules, and sequence them so a dated **April 2027 checkpoint** is banked first. Six concrete changes:
+
+1. **Claims replace modules as the unit of progress.** A claim is one falsifiable capability statement ("I can implement KV-cache inference from scratch matching HuggingFace token-for-token"), never a topic ("understand attention"). Its acceptance test is named **up front**. Its timebox is **1–2 weeks** — longer means split. Its terminal event is a **shipped public artifact** (≤1 extra hour, raw, no polish). A claim without its artifact is not done. Phases survive as groupings; claims are the rows.
+2. **The north star is unchanged.** Frontier-lab readiness per `frontier-lab.md`; Feinberg Exercises A and B remain graded capstones. GenHash joins them as a third capstone signal.
+3. **A dated checkpoint is added beneath the north star** in `COURSE_MAP.md` and `CLAUDE.md`: April 2027, EF / founding-engineer readiness, goals (a)–(d). Frontier-lab-ready is a **superset** of founding-engineer-ready — the checkpoint is a waypoint on the same arc, not a substitute for it.
+4. **Phase 3 is dissolved** as a standalone phase. Literature fluency becomes **one paper per week, every week**, matched to the active claim, logged to `papers/READING_LOG.md` in a fixed ≤1-page format. The JAX primer (old 3.J1–J4) becomes ordinary Claims 7–8; *How to Scale Your Model* stays the Phase-4 prerequisite as Claim 9.
+5. **GenHash becomes its own claim block** (Claims 17–20) on the CHECKPOINT path.
+6. **`CLAUDE.md` is rewritten as the operating contract** — role boundaries, session start/end, enforcement rules, honesty rule.
+
+**Why claims.**
+- Modules measure *exposure*; claims measure *capability*. "Finished Module 4" and "can rederive attention cold" are different facts, and only the second one survives an interview.
+- Naming the acceptance test up front is what makes a claim falsifiable. A test written afterwards always describes whatever got built, which is how a course drifts while appearing to progress.
+- The artifact-as-terminal-event closes the `frontier-lab.md` loop directly: the article's whole thesis is that public artifacts are the signal. Making the artifact a *completion condition* rather than a later phase means the signal accumulates continuously instead of depending on reaching Phase 8.
+- The 1–2 week timebox exists because D-0007 already projected 12–18 months. Timeboxes convert that from an estimate into a control.
+
+**Sequencing decisions and reasoning.**
+
+*Budget.* 2026-08-05 → 2027-04-01 is 34.1 weeks. At 12–15 hrs/week that's 410–512 hours. Allocated: **32 claim-weeks + 2 weeks slack** for a single 2-week slip.
+
+*Goal (a)'s ~100M model — reconciled with the existing 12M/30M targets.* Placed as **an extension of the Phase 1 scale-up ladder** (Claim 6, following the ~30M OpenWebText run at Claim 4), **not** as Phase 8's trained model. Reasoning: Phase 8's 12M model exists to prove *the framework works*, not to prove *scale* — it is a different claim, and it sits behind a 3–4 month framework build that would consume the entire checkpoint budget. Phase 1's ladder already terminates in a real trained model on real data, so extending it to ~100M is the cheap path. Phase 8's 12M target is left unchanged and post-checkpoint. "My own implementation" is read as: my architecture and my training loop, with PyTorch as the tensor/autograd backend — not HF `Trainer`. Writing my own autograd for a 100M run is Phase 8's job, not the checkpoint's.
+
+*Feinberg A and B stay as early as prerequisites allow*, because they serve goal (c) and (c) has the longest lead time — an artifact cannot be shared by anyone until it exists. A (Claim 10) lands immediately after the JAX primer and the scaling-book exercises, its true prerequisites. B (Claim 16) lands immediately after kernels-core, since a Pallas fusion kernel is not writable before the roofline reflex and fused attention exist.
+
+*GenHash is sequenced after Phase 1 and after a VQ / perceptual-loss prerequisite* (Claim 17), never before. HiFiC is a GAN-based codec — reproducing it requires working training skills, and benchmarking it requires LPIPS/FID machinery. Attempting it earlier would fail for training reasons that have nothing to do with compression. **Reproduction-first: novelty claims are banned until the Claim 19 benchmark exists.**
+
+*What moved to CONTINUATION, and why each.*
+- **Phase 8 (full framework build)** — 3–4 months standalone; its 12M model cannot serve goal (a); pulling it forward eats the budget. Post-checkpoint.
+- **Phase 5.3/5.4 (QuIP#/QTIP/AQLM reproductions)** — genuinely SOTA and genuinely not required by (a)–(d). Phase 5.1/5.2 (INT8, LLM.int8()) also deferred, but flagged **first up post-checkpoint** — highest interview value of the remainder.
+- **Phase 7 (agents)** — Track 2 of `frontier-lab.md`, valuable, and entirely independent of (a)–(d). Nothing in the checkpoint depends on it.
+- **Phase 6 back half** (paged attention, continuous batching, nano-vLLM, SnapKV) — Claim 21 (KV cache + prefill/decode roofline) banks the interview-relevant core cheaply in 1 week; the full serving loop is a multi-week build with no checkpoint dependency.
+- **Phase 2 back half** (REINFORCE → PPO → real GRPO on a base model → reward-hacking catalog) — Claim 22 banks the *derivation*, which is what goal (d) actually needs. Real GRPO on a GSM8K-tier task is a compute-heavy multi-week run.
+
+*Goal (c) is deliberately not a claim.* No acceptance test can compel a stranger to share your work, and writing one would be dishonest. It is structured instead as ~23 shots on goal — every claim ships an artifact — with Claims 10, 16 and 20 as the highest-probability ones.
+
+**Honest risks recorded at decision time.**
+- **The budget is tight.** Three capstone-grade artifacts plus a 100M scale-up in 32 claim-weeks is aggressive. The compressible block is kernels-core (Claims 11–15); if the schedule slips, that descopes first and Exercise B goes with it. Recorded now so a future descope is a decision, not a surprise.
+- **Goals (a) and (b) both require paid compute** — order a few hundred dollars of A100 time. Free Colab covers neither a ~100M run nor a HiFiC reproduction. Goal (a) asks for documented cost, so this is a deliverable rather than a hidden dependency, but the checkpoint fails without it.
+- **No GenHash source material existed** anywhere in the repo, on the SSD, or in the user's notes when this decision was made. Claims 17–20 were built from the compression spine specified in the restructure brief. **Open thread:** the *learned-hashing* half of "hybrid learned hashing + generative image compression" has no defined role in the ladder. It was deliberately not invented into claims. Resolve before Claim 17 starts.
+
+**Considered, rejected: meta-work.** Recorded here instead of built, per the no-meta-work rule:
+- A claim-tracking CLI / dashboard / status script — considered, rejected: meta-work. `PROGRESS.md` is the tracker.
+- A per-claim directory template + scaffolding generator — considered, rejected: meta-work. `CONVENTIONS.md` already defines the module layout.
+- A CI job to verify parity tests and artifact links — considered, rejected: meta-work. Running the tests is Claim 1's acceptance test; automating it would substitute for doing it.
+- A `READING_LOG.md` entry generator / template filler — considered, rejected: meta-work. The format is 5 lines; typing them is the point.
+- Auto-computing "weeks remaining to checkpoint" from a dated file — considered, rejected: meta-work. The mentor states it at session start from the date.
+
+**What this does NOT change.** Parity tests, `hand_math/`, `evidence/`, cold quizzes, the `REVIEW.md` spaced-repetition queue, the `MENTOR.md` Hard Rules and session protocol, `CONVENTIONS.md`, and `frontier-lab.md` all stand exactly as written. No code, tests, starters, solutions, or phase directories were touched by this restructure. D-0001…D-0007 remain in force; this decision supersedes none of them.
+
+**Revisit when.** At Claim 6 (the ~100M run) — that is the first claim whose cost and duration are genuinely uncertain, and the first real test of whether the 32-week budget holds. Also revisit immediately if any claim runs past its timebox twice, which would mean the 1–2 week box is wrong for this material rather than the claims being wrong.

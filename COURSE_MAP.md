@@ -1,267 +1,203 @@
 # COURSE_MAP.md — the 0 → frontier-lab arc
 
-> **The spine of the journey.** Replaces the old `SCHEDULE.md` (which framed this as an 8-hour sprint). This is a multi-month deep-evidence path, not a tour.
+> **The spine.** Progress is measured in **claims**, not modules. Phases survive as groupings; claims are the rows.
 >
-> Read alongside: [DECISIONS.md](DECISIONS.md) · [CONVENTIONS.md](CONVENTIONS.md) · [RESOURCES.md](RESOURCES.md) · [MENTOR.md](../MENTOR.md) Part C · [frontier-lab.md](../frontier-lab.md).
+> Read alongside: [DECISIONS.md](DECISIONS.md) · [CONVENTIONS.md](CONVENTIONS.md) · [RESOURCES.md](RESOURCES.md) · [MENTOR.md](../MENTOR.md) · [frontier-lab.md](../frontier-lab.md).
 >
-> **Status of each phase:** ⬜ not started · 🟨 in progress · ✅ complete.
-> Per-module status lives in [PROGRESS.md](PROGRESS.md). This file shows the *shape* of the arc.
+> Per-claim status lives in [PROGRESS.md](PROGRESS.md). This file shows the *shape* of the arc.
 
 ---
 
 ## North star (don't lose this)
 
-The endpoint is **frontier-lab readiness** as defined in `frontier-lab.md`: mathematical maturity + a public artifact that proves a specific skill the lab needs, lived out at the **edges** of the stack (kernels below, agent loops above). The capstone signals are concrete: a 10M-param JAX transformer doing digit addition on a TPU you derived Chinchilla laws for, a Pallas kernel that beats `ragged_dot`, and a public repo with handwritten derivations and recorded build sessions backing it all up.
+The endpoint is **frontier-lab readiness** as defined in `frontier-lab.md`: mathematical maturity + a public artifact that proves a specific skill the lab needs, lived out at the **edges** of the stack (kernels below, agent loops above). The capstone signals are concrete: a 10M-param JAX transformer doing digit addition on a TPU you derived Chinchilla laws for, a Pallas kernel that beats `ragged_dot`, **a GenHash benchmark putting a reproduced HiFiC against JPEG XL on Kodak with your own plots and an honest read on where the field actually is**, and a public repo with handwritten derivations and recorded build sessions backing it all up.
 
-Everything in Phases 0–8 below routes toward that endpoint.
-
----
-
-## Phase progression at a glance
-
-| # | Phase | Goal | Output | Status |
-|---|---|---|---|---|
-| 0 | From-scratch core | Build the transformer end-to-end *by hand*, parity-tested against PyTorch | Tiny GPT trained on a toy task, every component derived + tested | 🟨 |
-| 1 | Real training & fine-tuning | Train a real-sized model on real data, debug a non-converging run | GPT-2-small-ish trained on Colab, LoRA-fine-tuned, all loss curves committed | ⬜ |
-| 2 | Reasoning & RL | Implement GRPO from scratch; reward shape a small model | Toy GRPO → real GRPO on GSM8K-tier task, with measured improvement | ⬜ |
-| 3 | Literature fluency | Read + reconstruct the canon | Per-paper write-up + reconstruction (code or hand-derived figure); Chinchilla derived by hand | ⬜ |
-| 4 | Kernels (below the stack) | Earn the FlashAttention insight by hitting the bottleneck yourself | CUDA → Triton → Pallas path; **Feinberg Exercise A** capstone (10M JAX/TPU adder + hand Chinchilla) | ⬜ |
-| 5 | Quantization | Walk the quality↔perf tradeoff | INT8 path + LLM.int8() reproduction + **Feinberg Exercise B** capstone (Pallas `ragged_dot` beater) | ⬜ |
-| 6 | Inference engine (above the stack pt 1) | Build a nano-vLLM from scratch | KV cache → paged attention → continuous batching → benchmark vs HF | ⬜ |
-| 7 | Agents (above the stack pt 2) | Rigorous, measured agent experiments | Hypothesis-driven experiment with metric, write-up in the style of the Berkeley ADRS paper | ⬜ |
-| 8 | **Build your own PyTorch** | Dedicated 3–4 month framework project: autograd → nn → optim → kernels → inference, train a 12M-param LM on it, publish | Your own ML library + a trained model + a public artifact + the videos `frontier-lab.md` asks for | ⬜ |
+Everything below routes toward that endpoint.
 
 ---
 
-# Phase 0 — From-scratch core 🟨
+## CHECKPOINT — April 2027 (EF / founding-engineer readiness)
 
-**Goal.** Build every component of a transformer LM by hand, derive its math by hand, parity-test against PyTorch, then assemble them into a tiny working GPT on a toy task. This phase is the foundation: every later phase assumes you can re-derive backprop, attention, and the transformer block cold.
+**Set 2026-08-05. 34 weeks out. 12–15 hrs/week ⇒ ~410–512 hours. Budget: 32 claim-weeks + 2 weeks slack.**
 
-**Prerequisite check.** You can write down the cross-entropy loss without looking; you know what a gradient is; you've heard of softmax. (If any is shaky → 3Blue1Brown's NN series, then return.)
+Frontier-lab-ready is a **superset** of founding-engineer-ready. This checkpoint is not a smaller goal substituted for the north star — it is what must already be **banked partway along the same arc**. By April 2027 the following must be **provably true**, on disk, not in intention:
 
-**Phase 0 capstone.** Module `phase0/07_phase0_capstone/` that:
-- Imports the NumPy `Value` engine, attention, and block from Modules 1, 4, 5.
-- Stacks N=4 blocks, embeds 65-char vocab, runs forward on tinyshakespeare.
-- Loss drops on a 200-step training run (NumPy autograd — slow but real).
-- A second cell rebuilds the same model in PyTorch and verifies forward+backward parity.
-- `evidence/loss_curve.png` and `evidence/parity_check.txt`.
+**(a) A small LLM (~100M params) trained end-to-end on my own implementation.**
+Committed loss curves, a written failure-mode log (what diverged, what I changed, what it cost me), and an itemized dollar cost. Banked by **Claim 6**.
 
-| Mod | Title | Status | What it delivers | `hand_math/` scaffolded | Parity test |
-|---|---|---|---|---|---|
-| 01 | Autograd engine | ✅ scaffolded; user runs tests + writes hand-math | Scalar `Value` class + `backward()` over chain rule | ✅ (waiting on user derivation: ∂L/∂w through `+`, `*`, `tanh`) | ✅ exists |
-| 02 | Neural net on autograd | ✅ scaffolded; user runs tests + writes hand-math | Neuron → Layer → MLP; XOR train loop | ✅ (waiting on user: MSE gradient + finite-diff check) | ✅ added: forward + per-param-gradient + training convergence vs PyTorch |
-| 03 | Tokenization + BPE | ✅ scaffolded; user fills starter + runs tests | Char vocab, bigram count, **BPE from scratch** (starter+solution+test) | ✅ (waiting on user: MLE → empirical counts proof; info-theoretic argument for "merge most-frequent") | ✅ added: round-trip + parity with ref + compression + structural vs tiktoken |
-| 04 | Self-attention | ✅ scaffolded; **roofline section added** | Q/K/V from scratch in NumPy, causal mask, multi-head | ✅ (waiting on user: 1/√d_k variance derivation + mask-order counterexample) | ✅ added: softmax + single-head causal + uncausal + multi-head + causal-leak check |
-| 05 | Transformer block | ✅ scaffolded; user runs tests + writes hand-math | LayerNorm, residuals, FFN, GELU, full block forward in NumPy | ✅ (waiting on user: LayerNorm backward + pre-norm-vs-post-norm gradient argument) | ✅ added: gelu + LN + FFN + block forward + residual-path-zero check |
-| 06 | PyTorch crash | ✅ scaffolded; **bridge drill added** | Tensors, autograd, `nn.Module`, optim/data/GPU; **11** tensor drills (drill 11 = rebuild Module 4 in PyTorch + parity) | N/A (no derivation required for reference module) | ✅ inline drill assertions (incl. drill 11 numpy↔torch parity to 1e-5) |
-| 07 | **Phase 0 capstone** | ✅ scaffolded; user runs tests + trains | Tiny GPT (2 blocks × 4 heads × d=64) assembled from Modules 4/5; numpy forward + torch train; loss curve on tinyshakespeare | ✅ (waiting on user: causal-mask induction proof) | ✅ added: param-count + numpy-vs-torch forward to 1e-4 + full-stack causal invariant |
+**(b) GenHash capstone complete.**
+HiFiC reproduced at small scale, benchmarked against JPEG XL on Kodak with LPIPS/SSIM/FID and my own plots, plus an honest "here's where the field actually is" writeup positioning it against Control-GIC and the VQ-codec literature. Banked by **Claims 17–20**.
 
-**Phase 0 exits when:** all 7 modules satisfy CONVENTIONS.md "How to know a module is done" criteria. Specifically the user must, in their venv:
-1. Run each module's `test.py` and capture output to `evidence/test_output.txt`.
-2. Run Module 7's `python train.py` and confirm loss drops below 2.0 nats by step 2000.
-3. Produce at least one `hand_math/` derivation per module (photo or transcription).
-4. Pass the cold quiz on attention + transformer block + the capstone's data flow.
+**(c) At least one public artifact that a recognizable ML person shared unprompted.**
+This one cannot be forced by a claim — nobody can be made to share your work. It is structured as ~23 shots on goal: every claim ships an artifact. The three highest-probability shots are **Claim 10** (Feinberg Exercise A), **Claim 16** (Feinberg Exercise B), and **Claim 20** (the GenHash benchmark writeup).
 
-After all four, mentor promotes to Phase 1.
+**(d) I can pass a founding-engineer depth interview at a serious AI company cold.**
+Rederive backprop, attention, Chinchilla and a roofline on demand with no notes; defend the 100M run's failure modes; defend the GenHash benchmark; whiteboard the fused-attention kernel. Graded honestly against an unseen mock. Banked by **Claim 23**, fed continuously by `REVIEW.md`.
+
+**Honest read on the budget.** Three capstone-grade artifacts (Exercise A, Exercise B, GenHash) plus a 100M scale-up in 32 claim-weeks is aggressive. The compressible block is kernels-core (Claims 11–15); if the schedule slips, that descopes first and Exercise B goes with it. Goals (a) and (b) both need paid compute — order a few hundred dollars of A100 time. Goal (a) asks for documented cost, so this is a deliverable, not a hidden problem.
 
 ---
 
-# Phase 1 — Real training & fine-tuning ⬜
+## What a claim is
 
-**Goal.** Take the Module 7 PyTorch GPT and train it on a real-sized dataset on Colab, then fine-tune it. You must be able to *debug a run that won't converge*. This phase is where pure ML practice meets reality.
+A claim is **not** a topic. "Understand attention" is not a claim. "I can implement KV-cache inference from scratch matching HuggingFace token-for-token" is.
 
-**Frame.** Phase 0 proves you can build it. Phase 1 proves you can *run* it — which is a different skill.
+Every claim has four parts, and all four are fixed **before** work starts:
 
-**New idea introduced.** Training hygiene: warmup + cosine LR schedule, gradient clipping, mixed precision (bf16), AdamW with weight-decay param groups, gradient accumulation for effective batch size, evaluation at fixed intervals, checkpoint + resume, deterministic seeding.
+1. **One falsifiable capability statement** — phrased "I can …", and it must be possible to be wrong.
+2. **An acceptance test named up front** — a parity test, a benchmark, a reproduction target, or a cold rederivation. Named before the work, never retrofitted to what happened to get built.
+3. **A timebox of 1–2 weeks.** If a claim would take longer, it is split. Not extended.
+4. **A terminal event: a shipped public artifact** — post, plot, benchmark, or writeup derived from the work. Max ~1 extra hour. Raw and honest; no polish pass. **A claim without its artifact is not done.**
 
-| Mod | Title | What it delivers |
+---
+
+## Current position (honest, 2026-08-05)
+
+Phase 0 is **scaffolded, not proven**. Every module has prose, starter, solution, parity test, and `hand_math/` + `evidence/` READMEs. What does **not** exist:
+
+- No parity test has been run in a venv by me. The torch assertions are written and spot-verified numpy-side only — **unverified**.
+- No `hand_math/` derivation exists. The folders hold "what goes here" READMEs and nothing else.
+- No `evidence/` output exists. Same.
+- The cold quiz (`REVIEW.md` R-001 … R-008) was posed and **paused**. Never taken.
+
+So: nothing in Phase 0 is proven. **Claim 1 is closing Phase 0 with a cold-start proof.** Everything downstream is `⬜ not started`.
+
+Status legend: ⬜ not started · 🟨 in progress · ✅ proven (test run, quiz passed, artifact shipped).
+
+---
+
+## The claim ladder
+
+`CP` = on the CHECKPOINT path (required for April 2027). `CONT` = continuation, post-checkpoint.
+One paper per week, every week, matched to the active claim. Log format: [`papers/READING_LOG.md`](papers/READING_LOG.md).
+
+### Phase 0 — From-scratch core
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **1** | I can rebuild the Phase 0 transformer stack from a blank file and prove it matches PyTorch. | Every `phase0/*/test.py` passes in my venv, output captured to `evidence/`; capstone `train.py` reaches < 2.0 nats by step 2000; ≥1 `hand_math/` derivation per module; cold quiz R-001…R-008 scored ≥6/8 **with R-001, R-002, R-004 all correct**. | 2w | Post: the loss curve + the numpy↔torch parity numbers, including anything that failed first. | **CP** | Attention Is All You Need — re-read with my own Module 4/5 open in the other tab. |
+
+### Phase 1 — Real training & fine-tuning → banks goal (a)
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **2** | I can train a GPT with real hygiene and justify every schedule choice from the loss curve. | Warmup + cosine LR, grad clipping, bf16, eval intervals, checkpoint/resume on tinyshakespeare → ≤1.4 nats. Each choice defended in writing against an ablation or a cited reason. | 1w | Post: the hygiene checklist + what changed when I removed each piece. | **CP** | GPT-2 (Radford 2019) — name the 3 things that differ from my capstone. |
+| **3** | I can diagnose a broken training run from loss / grad-norm / param-norm signals alone in under 15 minutes. | 3 deliberately broken runs (bad LR, missing LayerNorm, masking bug). Each diagnosed **timed, under 15 min**, without reading the diff. Logged to `evidence/debug_log.md`. | 1w | Post: the three failure signatures, with the curves. | **CP** | AdamW (Loshchilov & Hutter 2017). |
+| **4** | I can scale to ~30M on an OpenWebText subset and predict the final loss before I launch the run. | 30M model trained; perplexity logged; LR ablation run; **predicted final loss committed before launch**, within 10% of actual. | 2w | Post: predicted-vs-actual, and why the gap was what it was. | **CP** | Chinchilla (Hoffmann 2022) — **derive N:D ≈ 1:20 by hand from the parametric loss.** `hand_math/` gate. |
+| **5** | I can implement LoRA from scratch and show ~1% trainable params measurably changes behavior. | No `peft`. Low-rank decomposition written by hand; trainable-param fraction reported; eval improvement on a target style over the base. | 1w | Post: before/after generations + the parameter-count math. | **CP** | LoRA (Hu 2021). |
+| **6** | **I can train a ~100M-param LM end-to-end on my own implementation, and account for its loss curve, failure modes, and dollar cost.** | ~100M model trained to a pre-committed target loss on my own model code (PyTorch as tensor backend; architecture and training loop mine — not HF `Trainer`). Loss curves + failure-mode log + **itemized cost table** committed. Generations sampled. | 2w | Post: the full run writeup — including every divergence and what it cost. | **CP → (a)** | GPT-3 (Brown 2020) — read for the scale framing, not the results. |
+
+### JAX + scaling (was Phase 3's primer; Phase 3 as a standalone phase is dissolved)
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **7** | I can write pure-functional JAX and explain what `jit`/`grad`/`vmap` do to the trace. | J1 drills pass; I can read a printed jaxpr cold and say what each line came from. | 1w | Post: the jaxpr walkthrough. | **CP** | Autodidax / *Compiling ML programs via high-level tracing* (Frostig 2018). |
+| **8** | I can rebuild the Phase 0 GPT in JAX/Flax/Optax and match PyTorch forward to 1e-4. | Parity test, JAX vs PyTorch reference, same seed, 1e-4. (Collapses old 3.J2–J4.) | 1w | Post: the port diff + the parity numbers. | **CP** | *How to Scale Your Model*, ch. 1–3. |
+| **9** | I can roofline any op cold, and I've done **every** exercise in *How to Scale Your Model*. | All exercises done in pencil, photographed to `hand_math/`. Then: roofline an op I haven't seen before, cold, on a whiteboard, correctly. | 2w | Post: one fully worked roofline + the exercise photo set. | **CP** | *How to Scale Your Model*, remaining chapters. **Phase-4 prerequisite.** |
+
+### Phase 4 — Kernels: below the stack
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **10** | **I can build a 10M-param JAX transformer on free Colab TPU that learns 3-digit addition, and derive its Chinchilla scaling laws by hand for dense and MoE.** *(Feinberg Exercise A)* | Trains to ≥99% on held-out addition. `hand_math/chinchilla_dense_moe.md` committed. Build **screen-recorded**. `jax + flax + optax` only. | 2w | The repo + the recording + a post walking the derivation. | **CP → (c)** | Switch Transformer (Fedus 2021) — for the MoE half of the derivation. |
+| **11** | I can write CUDA-C and explain the memory hierarchy from registers to HBM without notes. | Vector-add kernel runs; memory-hierarchy diagram drawn cold; measured bandwidth compared against spec. | 1w | Post: the diagram + measured-vs-spec bandwidth. | **CP** | PMPP ch. 1–4 *(book, not a paper — logged the same way)*. |
+| **12** | I can write a tiled shared-memory matmul that beats naive by ≥5× and explain the speedup from the roofline. | Measured ≥5× on a T4; roofline computed **before** optimizing predicts the direction of the win. | 1w | Post: the benchmark + the roofline that called it. | **CP** | *Anatomy of High-Performance Matrix Multiplication* (Goto & van de Geijn 2008). |
+| **13** | I can implement online softmax and a fused LayerNorm/RMSNorm kernel. | Numerical parity with PyTorch to 1e-5; single-pass online softmax verified against the naive three-pass version. | 1w | Post: why one pass is possible at all. | **CP** | *Online normalizer calculation for softmax* (Milakov & Gimelshein 2018). |
+| **14** | I can profile naive attention to find the HBM bottleneck, then write a fused attention kernel that beats it by ≥3× on a T4. | Profiler output showing the bottleneck **before** the fix; measured ≥3× after; roofline explaining the cause in one paragraph. | 2w | Post: the profile, the fix, the number. | **CP** | FlashAttention v1 (Dao 2022) — find the one sentence that motivates the whole paper. |
+| **15** | I can write the same fused attention in Triton and in Pallas. | Both match the CUDA version numerically; all three benchmarked side by side. | 1w | Post: three implementations, one table. | **CP** | Triton (Tillet 2019). |
+
+### Phase 5 — Quantization
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **16** | **I can write a Pallas kernel that beats `jax.lax.ragged_dot` for `F > D` by fusing up/down projections, and explain why the speedup exists.** *(Feinberg Exercise B)* | A setting with a **measured** forward-pass speedup, committed to `evidence/`, plus a one-paragraph cause-of-speedup explanation that survives being questioned. | 2w | The kernel + the benchmark + the explanation post. | **CP → (c)** | MegaBlocks (Gale 2022) — MoE kernel framing. |
+| — | INT8 from scratch; LLM.int8() outlier reproduction *(old 5.1, 5.2)* | — | — | — | **CONT** | first up post-checkpoint |
+| — | QuIP / QuIP# / QTIP 2-bit reproduction; AQLM + PV-Tuning *(old 5.3, 5.4)* | — | — | — | **CONT** | — |
+
+### GenHash — capstone track → banks goal (b)
+
+**Reproduction-first. Novelty claims are banned until Claim 19's benchmark exists.** Sequenced here deliberately: after real training skills (Phase 1) and after the VQ / perceptual-loss prerequisite, not before.
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **17** | I can implement VQ-VAE with a straight-through estimator and an LPIPS perceptual loss, matching reference reconstruction quality. | Trained on a small image corpus; reconstruction LPIPS within a pre-committed margin of the reference implementation; codebook collapse checked for and reported either way. | 2w | Post: reconstructions + the codebook-usage histogram. | **CP** | VQ-VAE (van den Oord 2017). |
+| **18** | I can reproduce HiFiC at small scale — generative compression that beats a classical codec at low bitrate on my own eval. | HiFiC repro trained; rate–distortion–perception curve produced on a held-out set; beats JPEG at matched bitrate on LPIPS. | 2w | Post: the RDP curve + honest sample comparisons. | **CP** | HiFiC (Mentzer 2020). |
+| **19** | I can benchmark my codec against JPEG XL on Kodak with LPIPS, SSIM and FID, on my own plots. | Full Kodak sweep, all 3 metrics, plots generated by my own script, reproducible end-to-end from a committed command. | 1w | The plots + the reproduction script. | **CP** | JPEG XL (Alakuijala 2019). |
+| **20** | I can position my result honestly against Control-GIC and the VQ-codec literature — **including where I lose.** | A writeup that names where the field actually is, what my repro does not match, and which of my numbers are not comparable. Survives an adversarial read. | 1w | **The writeup — the terminal artifact for goal (b).** | **CP → (b)(c)** | Control-GIC (2024). |
+
+### Phase 6 — Inference engine: above the stack pt 1
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **21** | I can add a KV cache to my GPT and explain the prefill/decode roofline split. | Measured tokens/sec speedup; both phases rooflined separately; greedy decode matches the uncached path token-for-token. | 1w | Post: the two rooflines, and why they differ. | **CP** | PagedAttention / vLLM (Kwon 2023). |
+| — | Paged attention; continuous batching; nano-vLLM reproduction; SnapKV *(old 6.3–6.6)* | — | — | — | **CONT** | — |
+
+### Phase 2 — Reasoning & RL
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **22** | I can derive the GRPO objective cold and explain why advantage normalization stabilizes it versus vanilla policy gradient. | Derived on a whiteboard with no notes, including the KL-to-reference term. Toy GRPO run on my own model with a synthetic reward, showing the reward move. | 1w | Post: the derivation + the toy run. | **CP** | DeepSeekMath / GRPO (Shao 2024). |
+| — | REINFORCE → PPO from scratch; real GRPO on a small base (GSM8K-tier); reward-shaping failure catalog *(old 2.1, 2.2, 2.4, 2.5)* | — | — | — | **CONT** | — |
+
+### The checkpoint gate
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **23** | **I can pass a founding-engineer depth interview at a serious AI company cold.** | An unseen mock, no notes: rederive backprop, attention scaling, Chinchilla, and a roofline on demand; defend the 100M run's failure modes; defend the GenHash benchmark against a skeptic; whiteboard the fused-attention kernel. Graded honestly — a pass claimed without a real mock is not a pass. | 1w | Post: what I could not answer. | **CP → (d)** | Reader's choice — fill the gap the mock exposes. |
+
+**Claim-weeks on the CHECKPOINT path: 32.** Slack: 2 weeks.
+
+### CONTINUATION — the rest of the frontier-lab arc
+
+Sequenced after April 2027, in dependency order. Not lesser work — later work.
+
+| Block | What | Why it is post-checkpoint |
 |---|---|---|
-| 1.1 | nanoGPT-style pretrain on tinyshakespeare | Loss curve → 1.4 nats; readable generations; first profiling pass |
-| 1.2 | Scale up — pretrain on OpenWebText subset | A ~30M-param model on a T4 in a day; perplexity logged; learning-rate ablation |
-| 1.3 | Debugging non-convergence (deliberately broken runs) | Mentor breaks the run 3 ways (bad LR, missing layernorm, masking bug). You diagnose each; write `evidence/debug_log.md` |
-| 1.4 | Fine-tuning + LoRA | LoRA implemented from scratch (not via `peft`); ~1% trainable params; eval improvement on a target style |
-| 1.5 | Inference quality probes | Perplexity, top-k sample quality, simple eval set (e.g. tinyshakespeare held-out) |
-
-**Capstone.** A trained-on-Colab GPT (your weights, on HuggingFace or in `evidence/`) + a LoRA adapter that demonstrably changes behavior + the debugging log.
-
-**Phase 1 exits when:** you can take a fresh broken training run, diagnose the bug from loss-curve / gradient-norm / param-norm signals alone, in under 15 minutes.
+| Phase 5 quantization proper | INT8 → LLM.int8() → QuIP/QuIP#/QTIP → AQLM + PV-Tuning | Not required by (a)–(d). First up post-checkpoint — highest interview value of the remainder. |
+| Phase 6 back half | Paged attention → continuous batching → nano-vLLM → SnapKV | Claim 21 banks the interview-relevant core; the serving loop is a multi-week build with no checkpoint dependency. |
+| Phase 2 back half | REINFORCE → PPO → real GRPO on a base model → reward-hacking catalog | Claim 22 banks the derivation, which is what (d) needs. Real GRPO on a GSM8K-tier task is a compute-heavy multi-week run. |
+| Phase 7 — agents | The full hypothesis-driven measured experiment, ADRS-style writeup | Track 2 of `frontier-lab.md`. Genuinely valuable, entirely independent of (a)–(d). |
+| **Phase 8 — build your own PyTorch** | 8.1 core → 8.2 training → 8.3 kernels → 8.4 inference → 8.5 train a 12M LM → 8.6 publish | 3–4 months on its own. Its 12M model proves *the framework*, not *scale* — so it cannot serve goal (a), and pulling it before April would consume the entire budget. See [PHASE8_FRAMEWORK.md](PHASE8_FRAMEWORK.md) and [D-0007](DECISIONS.md). |
 
 ---
 
-# Phase 2 — Reasoning & RL ⬜
+## The weekly paper track
 
-**Goal.** Implement GRPO **from scratch**, then on a real (small) base model, on a verifiable task. Walk the bridge from supervised fine-tuning to RL.
+**One paper per week, every week.** Not a phase, not a block — a constant. Chosen to match the active claim wherever possible: attention papers during attention claims, compression papers during GenHash claims.
 
-**Frame.** This is where modern reasoning lives. DeepSeek-R1 is the milestone paper; GRPO is the algorithm. PPO/InstructGPT are the historical predecessors worth understanding for the comparison.
+Every paper gets one entry in [`papers/READING_LOG.md`](papers/READING_LOG.md), fixed format, **≤1 page**:
 
-**New idea introduced.** Policy gradient mechanics: rollout buffers, advantage normalization (the *Relative* in GRPO), reward shaping, the KL-to-reference term, why off-policy RL is unstable. Also: rule-based rewards (math correctness, code-tests-pass) vs human-preference rewards (RLHF).
+1. **Claim it supports / why this paper now**
+2. **The core result, reconstructed** — code, rederivation, or hand-drawn figure
+3. **What I'd have to build to reimplement this**
+4. **What clicked / what is still confusing** — honest, and "still confusing" is expected to be non-empty
+5. **One spaced-repetition question added to `REVIEW.md`**
 
-| Mod | Title | What it delivers |
-|---|---|---|
-| 2.1 | Policy gradient primer | REINFORCE on a toy bandit, then on a CartPole-tier task (via `spinningup`) |
-| 2.2 | PPO from scratch | Clipped-objective PPO on the same toy; understand the value-function role; ablate the clip |
-| 2.3 | GRPO derivation + toy impl | Derive the GRPO objective by hand (advantage normalization, KL term). Toy GRPO on the Module 1.4 GPT with a synthetic reward |
-| 2.4 | Real GRPO on a small base | Qwen-0.5B or similar, RL on GSM8K-style math; measured accuracy improvement |
-| 2.5 | Reward shaping deep dive | Deliberately bad rewards → observe reward hacking; fix it; write up the failure modes |
-
-**Capstone.** A small reasoning model with measurable accuracy improvement on a verifiable task, plus a written failure-mode catalog of the reward shapes that didn't work.
-
-**Phase 2 exits when:** you can derive the GRPO objective cold and explain why the advantage normalization is what makes the *Relative* version more stable than vanilla policy gradient.
+*How to Scale Your Model* keeps its special status: **every exercise**, in pencil, as the Phase-4 prerequisite (Claim 9).
 
 ---
 
-# Phase 3 — Literature fluency + JAX primer ⬜
+## Session protocol
 
-**Goal.** Read the canon. Reconstruct the key result of each paper in code or in a hand-derived figure. End with a JAX primer that prepares Phases 4–5.
+**At session start, the mentor states:**
 
-**Frame.** Up to this point, you've been building. Now you internalize the field's vocabulary so you can converse with researchers efficiently. You can't only show edge contributions; foundational fluency is a baseline. (Per `frontier-lab.md` "FOUNDATION".)
+1. The **active claim** and its exact acceptance test.
+2. **Days remaining** in its timebox.
+3. **This week's paper.**
+4. **Weeks remaining to the April 2027 checkpoint.**
 
-**Reading list — required, with reconstruction:**
+Then, per `MENTOR.md` Parts D/E: reads `PROGRESS.md`, `SKILLS.md`, `REVIEW.md`, `MENTOR_LOG.md`, `DECISIONS.md`, `RESOURCES.md`, `JOURNEY.md` in full; **quizzes me cold** on any `REVIEW.md` items due today plus the central concept of the prior session; asks how much time I have; scopes the session to **one concrete completable deliverable** against the active claim.
 
-| Paper | Reconstruction task |
-|---|---|
-| Attention Is All You Need (Vaswani 2017) | (Already done in Phase 0.) Re-read, now annotate with your Module 4/5 in the other tab |
-| GPT-2 (Radford 2019) | Annotate; identify the 3 things that differ from your Module 7 |
-| Chinchilla (Hoffmann 2022) | **Derive N:D ≈ 1:20 by hand from the parametric loss.** Commit photo + transcript |
-| LLM.int8() (Dettmers 2022) | Reproduce the outlier-channel histogram on a small model |
-| FlashAttention v1 (Dao 2022) | Read; identify the *one sentence* that motivates the whole thing (memory bandwidth). Implement standard attention + measure HBM traffic with profiler |
-| DeepSeek-R1 (2025) | (Already covered in Phase 2.) Re-read; identify the 2 algorithmic ideas vs vanilla GRPO |
-| LoRA (Hu 2021) | (Already done in Phase 1.) Re-read; understand the low-rank-decomposition argument |
-| How to Scale Your Model (DeepMind 2025) | Do **every exercise** in this web textbook. This is the prereq for Phase 4 |
+**At session end:**
 
-**JAX primer (the bridge for Phases 4–5):**
+1. Update `PROGRESS.md` **at claim granularity** — what is *proven*, not what is scaffolded.
+2. Update the other memory files.
+3. Write the devlog entry in my voice (`MENTOR.md` Part F).
+4. Add at least one new spaced-repetition question to `REVIEW.md`.
+5. Commit + push.
+6. State the single most important thing to remember.
 
-| Mod | What it delivers |
-|---|---|
-| 3.J1 | JAX basics — pure functions, `jit`, `grad`, `vmap`, `pmap`, sharding |
-| 3.J2 | Flax (NNX) — model definition, parameter handling, training loop equivalents |
-| 3.J3 | Optax — optimizers, schedules, gradient clipping, composability |
-| 3.J4 | PyTorch ↔ JAX translation — rebuild Module 7 GPT in JAX, verify forward parity to 1e-4 |
-
-**Capstone.** A `papers/READING_LOG.md` with one-page per-paper write-ups (your words, not summaries — what *clicked* and what stayed confusing) + the Chinchilla derivation in `hand_math/` + a JAX implementation of Module 7 that matches PyTorch forward.
-
-**Phase 3 exits when:** you can explain the Chinchilla result from the parametric loss without looking, and you can sketch Q/K/V in JAX without consulting docs.
-
----
-
-# Phase 4 — Kernels: below the stack ⬜
-
-**Goal.** Earn the FlashAttention insight by *hitting* the memory bottleneck yourself, then write fused kernels that fix it. Path: roofline reflex → CUDA-C basics → Triton → Pallas. End with Feinberg's Exercise A.
-
-**Frame.** This is the central frontier-lab track. The math is simple at the surface — a little algebra tells you whether you're bottlenecked on communication, FLOPs, or memory bandwidth. The hard part is systems thinking + lateral reasoning + identifying unmodelled constraints. Coding agents won't out-engineer you on a well-posed kernel question, but they won't *notice* the constraint unless told.
-
-**New idea introduced.** GPU mental model: threads, warps, blocks, SMs, memory hierarchy (registers → SRAM → L2 → HBM), bandwidth roofline, tiling, fusion. Then the DSL escalator: CUDA-C (closest to the metal) → Triton (block-level pythonic) → Pallas (JAX-native kernels).
-
-| Mod | Title | What it delivers |
-|---|---|---|
-| 4.1 | Roofline reflex | Reiner Pope lecture digested; do "How to Scale Your Model" exercises 1–N; you can roofline any op in your sleep |
-| 4.2 | GPU mental model | Threads/warps/blocks/SMs from PMPP Ch.1–4; memory hierarchy diagram; first vector-add kernel in CUDA-C |
-| 4.3 | Matmul → tiled matmul | Naive matmul, then tiled with shared memory. Measure speedup. Roofline both |
-| 4.4 | Softmax + LayerNorm/RMSNorm kernels | Online softmax (the FlashAttention prerequisite); fused LN/RMSNorm |
-| 4.5 | Naive attention → fused attention | Naive impl, **profile to find the HBM bottleneck**, then write fused attention from scratch (online softmax + tiling). Measure speedup vs HF reference |
-| 4.6 | Triton tutorials walkthrough | Vector add → softmax → matmul → fused attention in Triton |
-| 4.7 | Pallas tutorials walkthrough | Same ops in Pallas; understand the JAX-native abstraction |
-| 4.8 | **Feinberg Exercise A — JAX/TPU adder** | 10M-param transformer in `jax + flax + optax` on free Colab TPU; hard-coded vocab (digits + `+` + `=`); trains to do up-to-3-digit addition; **Chinchilla scaling laws derived by hand for dense and MoE; documented in `hand_math/`**; screen-recorded build |
-
-**Capstone (= 4.8).** Exercise A from `frontier-lab.md`. This is the first artifact Feinberg explicitly grades on.
-
-**Phase 4 exits when:** you can do a full roofline analysis for any op cold; your fused attention kernel beats naive by ≥3× on a T4; Exercise A is committed with `hand_math/chinchilla_dense_moe.md` + a video recording link.
-
----
-
-# Phase 5 — Quantization ⬜
-
-**Goal.** Walk the quality↔performance tradeoff hands-on. Reproduce the LLM.int8() outlier insight. Then Feinberg's Exercise B.
-
-**Frame.** Quantization is the second canonical edge-of-stack skill — minimal resource demand, full exposure to the quality↔performance tradeoff. The De Sa group lineage (QuIP → QuIP# → QTIP) is current state of the art for ≤4-bit; AQLM is the alternate branch.
-
-**New idea introduced.** Outlier-aware quantization. Why a few large activations dominate the quantization error. The lattice/codebook-based methods that fix it. PV-Tuning.
-
-| Mod | Title | What it delivers |
-|---|---|---|
-| 5.1 | INT8 from scratch | Quantize Module 1.2's pretrained GPT to INT8; measure perplexity degradation; first feel for the tradeoff |
-| 5.2 | LLM.int8() outlier reproduction | Reproduce the outlier-channel histogram; mixed-precision recipe |
-| 5.3 | QuIP / QuIP# / QTIP reading + 2-bit reproduction | Reproduce QuIP# 2-bit on a small model; understand the LDLQ + RHT decomposition |
-| 5.4 | AQLM + PV-Tuning reading | Side branch: additive quantization. Reproduce on the same small model. Compare |
-| 5.5 | **Feinberg Exercise B — Pallas `ragged_dot` beater** | Pallas kernel that beats `jax.lax.ragged_dot` for `F > D` by fusing up/down projections. Measured forward-pass speedup with a written explanation of *why* it's there |
-
-**Capstone (= 5.5).** Exercise B from `frontier-lab.md`. The second artifact Feinberg grades on.
-
-**Phase 5 exits when:** Exercise B has a measured speedup committed in `evidence/` + you can explain the cause-of-speedup in one paragraph.
-
----
-
-# Phase 6 — Inference engine: above the stack pt 1 ⬜
-
-**Goal.** Build a nano-vLLM. KV cache → paged attention → continuous batching → tiny serving loop.
-
-**Frame.** This is where "vLLM makes sense." You've built the model; now build the *engine that runs it efficiently*. SnapKV is the natural extension (KV cache compression).
-
-**New idea introduced.** Inference is a different beast from training: prefill vs decode phases have different roofline behavior (prefill is compute-bound, decode is bandwidth-bound). KV cache is the central data structure. Paged attention is "virtual memory for KV blocks." Continuous batching is "schedule new requests into the same forward pass as ongoing ones."
-
-| Mod | Title | What it delivers |
-|---|---|---|
-| 6.1 | KV cache from scratch | Add KV cache to Module 7 GPT; measure tokens/sec speedup |
-| 6.2 | Prefill vs decode | Profile both phases separately; roofline each |
-| 6.3 | Paged attention | Implement block-allocated KV; reference `vllm-from-scratch` style |
-| 6.4 | Continuous batching | Mini scheduler; multiple requests in one forward |
-| 6.5 | nano-vLLM reproduction | Get to ~1k-line vLLM-like serving loop; validate against HuggingFace reference |
-| 6.6 | SnapKV reproduction | KV compression on top of the cache; measure decode speedup |
-
-**Capstone.** A small serving loop (`evidence/`) that runs your Phase 1.2 model at meaningfully better throughput than naive `model.generate()`, profiled and explained.
-
-**Phase 6 exits when:** you can sketch the prefill/decode/paged-attention flow on a whiteboard cold + your nano-vLLM matches HF outputs to 1e-4 for greedy decoding.
-
----
-
-# Phase 7 — Agents: above the stack pt 2 ⬜
-
-**Goal.** Rigorous, controlled, measured agent experiments. Not "use Claude" — set up a hypothesis, define a metric, run a measured experiment, write it up.
-
-**Frame.** Per `frontier-lab.md`: "It's setting up rigorous, controlled, technical experiments that measure how single or multiple LLM agents behave." The field doesn't have a clean path yet. Reference points: Karpathy's `autoresearch` (LLM agents finding 20 additive training tweaks for nanochat that transferred to larger models), AlphaEvolve + FunSearch (LLM-in-the-inner-loop of algorithm development), "Barbarians at the Gate" (LLM agents in systems research — up to 5× runtime wins).
-
-**New idea introduced.** Agent loop discipline: experiment hypothesis up-front, controlled baselines, metric pre-registered, statistical significance, ablations. Treat the LLM as a measurement instrument with its own noise floor.
-
-| Mod | Title | What it delivers |
-|---|---|---|
-| 7.1 | Reading the three lineages | Karpathy autoresearch, AlphaEvolve/FunSearch, Berkeley ADRS. Identify which framing fits your interest |
-| 7.2 | Tooling foundation | Pick a harness: claude-agent-sdk / openai-agents / your own. Build a measured ping-pong with a baseline |
-| 7.3 | Hypothesis-driven experiment design | Write the experiment doc *before* running anything: hypothesis, metric, baseline, ablation set |
-| 7.4 | The experiment | Run it. Multiple seeds. Statistical significance. Plot. |
-| 7.5 | Write-up + null result discipline | Even if it didn't work, write the result honestly. ADRS-paper-style write-up |
-
-**Capstone.** A measured agent experiment with a clear hypothesis, baseline, metric, multiple seeds, and a write-up. The write-up matters as much as the result.
-
-**Phase 7 exits when:** the experiment is run + written up + committed, *whether or not* the hypothesis held. (Hard Rule #6: honest, not flattering.)
-
----
-
-# Phase 8 — Build your own PyTorch ⬜
-
-**Goal.** A dedicated 3–4 month framework project: build your own PyTorch-style ML library from scratch, end-to-end. Autograd → `nn.Module` → optimizers → GPU kernels → inference engine. Then train a real (~12M-param) LM on *your* framework and publish.
-
-**Frame.** Phases 0–7 build every component once for learning. Phase 8 builds them *again*, integrated, with the benefit of hindsight — cleaner APIs, fewer dead ends, an opinionated POV. This is the "second pass" that turns scattered learning code into a real artifact. (See [DECISIONS.md D-0007](DECISIONS.md) for the rationale on why this is post-learning, not interwoven.)
-
-**Reference projects.**
-- [xames3/slowtorch](https://github.com/xames3/slowtorch) — PyTorch reimplementation in pure Python (pedagogical reference).
-- [mni-ml/framework](https://github.com/mni-ml/framework) — Rust backend + custom CUDA kernels, trained a 12M-param LLM (the shape of artifact we're aiming for).
-
-**New idea introduced.** Library design as its own discipline: API ergonomics, layered abstractions (backend ↔ tensor ↔ nn ↔ train ↔ serve), parity discipline against a reference framework (PyTorch) at every layer, the "build twice" principle.
-
-| Stage | Title | What it delivers | Approx duration |
-|---|---|---|---|
-| 8.1 | **Core (ML side)** | Vectorized `Tensor` + autograd (NumPy backend), `nn.Module` system, primitives (`Linear`, `LayerNorm`, `Embedding`, `MultiheadAttention`). Parity tests against PyTorch on every primitive. | ~3–4 weeks |
-| 8.2 | **Training (ML side)** | Optimizers (`SGD`, `AdamW`), schedulers (cosine + warmup), gradient clipping, mixed precision, checkpoint/resume, evaluation loop. Train a small transformer end-to-end on your framework. | ~2–3 weeks |
-| 8.3 | **Kernels (GPU side)** | Port Phase 4's CUDA matmul + Triton flash-attention into the framework as the GPU backend. `Tensor.cuda()` means *your* CUDA path, not PyTorch's. Roofline'd. | ~3–4 weeks |
-| 8.4 | **Inference (GPU side)** | Port Phase 6's KV cache + paged attention + continuous batching into a `framework.serve` module. Real inference path. | ~2–3 weeks |
-| 8.5 | **Train a real model** | ~12M-param LM, trained end-to-end on *your* framework, evaluated against a baseline. This is the proof. | ~2 weeks |
-| 8.6 | **Publish** | README polish, blog post, screen-recording, Twitter. Hook decision (specific kernel beat, novel backend, minimalism angle, etc.) happens *here*, post-build, from evidence. | ~1 week |
-
-**Capstone (= 8.5 + 8.6).** A working ML framework, a trained model demonstrating it works, a public release. This *is* the signaling artifact `frontier-lab.md` asks for.
-
-**Phase 8 exits when:** the framework is public, the 12M-param model is trained and evaluated against a baseline, the blog post is written, the screen recording is up, and you've reached out to one or more frontier labs (Feinberg explicitly offers an evaluation). The choice of where to work becomes yours.
-
-**Explicit non-requirements.** It does **not** need a unique novel angle to be considered complete — "I built a working ML framework end-to-end with proof for every piece" is itself signal. A hook (specific kernel beat, novel backend, etc.) is nice-to-have, decided in 8.6 from what the build actually surfaced, not committed to up front.
+**Enforcement** — the full rules live in [`../CLAUDE.md`](../CLAUDE.md). The short version: no new claims while one is open; a claim past its timebox gets **split or descoped, never silently extended**; artifact-before-done, no exceptions; no meta-work unless I ask for it.
 
 ---
 
@@ -269,36 +205,4 @@ After all four, mentor promotes to Phase 1.
 
 > Doing these exercises is a strong **start**, not a shortcut past the years of signaling a traditional path provides. The realistic payoff is real skills + a public repo that demonstrates something useful and adopted — after which the choice of where to work becomes mine.
 
-Believe this. The course is long because the goal is long. Each phase has a concrete completion criterion so progress is verifiable, but the overall arc is years-not-months in *full* depth. The 2–3 month figure in MENTOR.md is the *intensive build* — Phase 8 (artifact + reach-out + landing) is on top of that.
-
----
-
-## What the mentor does at session start (per `MENTOR.md` Parts D, E)
-
-1. Reads `PROGRESS.md`, `SKILLS.md`, `REVIEW.md`, `MENTOR_LOG.md`, `DECISIONS.md`, `RESOURCES.md`, `JOURNEY.md` in full.
-2. Tells you exactly where we left off.
-3. **Quizzes you cold** on any `REVIEW.md` items due today + the central concept of the prior session.
-4. Asks how much time you have, scopes the session to **one concrete completable deliverable**.
-5. Starts work.
-
-## What the mentor does at session end
-
-1. Updates all memory files.
-2. Writes the devlog entry in your voice (Part F).
-3. Adds at least one new spaced-repetition Q to `REVIEW.md`.
-4. Commits + pushes.
-5. States the single most important thing to remember from this session.
-
----
-
-## Next concrete step (current state, 2026-05-23 end of day)
-
-Phase 0 is **fully scaffolded** — every module has its prose + starter + solution + parity test (where applicable) + `hand_math/` and `evidence/` READMEs. All Phase 0 modules now live in `phase0/`. The Phase 0 capstone (`phase0/07_phase0_capstone/`) exists, has been verified to run forward in NumPy, and is ready for the user to run `test.py` + `train.py` in their venv. See [`phase0/PHASE0_CLOSURE.md`](phase0/PHASE0_CLOSURE.md) for the friendly runbook.
-
-**The user's next steps (autonomous):**
-1. Install `requirements.txt` in a venv and run each `test.py` to capture `evidence/test_output.txt`.
-2. Run `phase0/07_phase0_capstone/train.py` to produce loss curve + samples.
-3. Write at least one `hand_math/` derivation per module.
-4. Re-issue the cold quiz with the mentor (paused at end of session 02).
-
-After all four → Phase 0 closes, Phase 1 begins.
+Believe this. The arc is longer than 34 weeks and that is fine — the checkpoint is a waypoint on it, not a replacement for it. What the checkpoint buys is that the waypoint is **dated** and the claims are falsifiable, so drifting cannot be mistaken for progress.
