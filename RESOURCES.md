@@ -23,6 +23,22 @@
 
 ---
 
+## Rust from-scratch (R0a, R0b, R1) — added 2026-08-10, D-0010
+
+> **Read-after gate.** Read each reference project only **after** your own version of that component passes its test. Read one early and you import its design decisions before you understand the problem those decisions solve.
+>
+> **None of the three meets the `std`-only constraint.** That is the useful finding, not a disappointment: `ndarray` begins where your Day 8 ends, so your project is strictly larger than all three.
+
+- [tekaratzas/RustGPT](https://github.com/tekaratzas/RustGPT) ✅ — the closest reference. Writes its own backpropagation and gradient clipping over `ndarray`. 3 transformer blocks, pre-train then instruction-tune. **Deps: `ndarray`, `rand`.** Read after Day 8, never before — `ndarray` *is* your Days 2–8.
+- [nerdai/llms-from-scratch-rs](https://github.com/nerdai/llms-from-scratch-rs) ✅ — Raschka's book mapped chapter-for-chapter to Rust. Useful only as a sequencing check. **Deps: `candle`.** Candle hides tensors, autograd and kernels, so it answers none of the hard questions.
+- [Reddit r/rust — "I built an LLM from scratch in Rust, just ndarray"](https://www.reddit.com/r/rust/comments/1nguv1a/i_built_an_llm_from_scratch_in_rust_just_ndarray/) ✅ — a build log with real failure modes. Same `ndarray` limit as RustGPT.
+- [*Programming Rust*, 2nd ed.](https://www.oreilly.com/library/view/programming-rust-2nd/9781492052586/) — local PDF at `~/Downloads/Books for self/Programming Rust.pdf`. Every Rust page reference in [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) comes from its table of contents.
+- [*Rust for Rustaceans*](https://nostarch.com/rust-rustaceans) — local PDF, same folder. For after R1, when idiomatic API design starts to matter more than syntax.
+- [safetensors format spec](https://github.com/huggingface/safetensors) ✅ — the Day 23 target. 8-byte length, JSON header, raw bytes. **Use this, never `pytorch_model.bin` (pickle can execute arbitrary code — D-0009 §4.2).**
+- [openai/gpt-2](https://github.com/openai/gpt-2) ✅ — the original TensorFlow reference. Read `model.py` for the exact GELU and `Conv1D` conventions that Day 21 and Day 23 must match.
+
+---
+
 ## Training & scaling (Phase 1, Phase 3, Phase 4)
 
 - [**How To Scale Your Model** — Austin et al., DeepMind 2025](https://jax-ml.github.io/scaling-book/) ✅ — *roofline-first textbook on TPU/LLM scaling. The Phase 4 prereq textbook.* Repo: [jax-ml/scaling-book](https://github.com/jax-ml/scaling-book). **Do every exercise** before Phase 4.

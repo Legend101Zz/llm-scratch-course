@@ -1,6 +1,11 @@
 # 🚀 What's Next — after the 8-hour sprint
 
-Congrats. You went from "I've watched videos about LLMs" to "I've built one". Here's the off-ramp into deeper waters, ranked by "bang for buck".
+> ⚠️ **RETIRED 2026-05-23. Historical artifact — kept as trail, not as instructions.**
+> Written as the off-ramp from the retired 8-hour sprint. Its Tier 1–4 suggestions have been absorbed, resequenced, and given acceptance tests in the claim ladder — see [`COURSE_MAP.md`](COURSE_MAP.md) and [`DECISIONS.md`](DECISIONS.md) D-0008. **Nothing below is current.** Kept because the raw trail is part of the point.
+
+---
+
+The original off-ramp, ranked by "bang for buck":
 
 ## Tier 1 — Solidify (do these next week)
 
@@ -72,6 +77,6 @@ Congrats. You went from "I've watched videos about LLMs" to "I've built one". He
 
 ## Final advice
 
-You learned more in 8 hours than most people who say they "study LLMs" learn in a month — because you typed every line. Keep that habit. Theory you can read; practice you have to bleed.
+Theory you can read; practice you have to bleed. Type every line.
 
 Now go build something stupid and ship it. 🥋

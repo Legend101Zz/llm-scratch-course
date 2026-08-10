@@ -138,3 +138,139 @@ The framework adds ~3–4 months on top of Phases 0–7. Total course time becom
 - [mni-ml/framework](https://github.com/mni-ml/framework) — Rust backend + custom CUDA kernels, trained a 12M-param LLM. The shape of artifact we're aiming for, scaled to our skill profile.
 
 **Revisit when.** End of Phase 4 (the kernels phase). At that point we'll know if the GPU side of Phase 8 is realistically scoped at 3–4 weeks or needs more. Also revisit at end of Phase 6 (inference) for the same reason on `framework.serve`.
+
+---
+
+## D-0008 · 2026-08-05 · Unit of progress = capability claims; dated April 2027 checkpoint; GenHash as a capstone track
+
+**Decision.** Restructure the course around **capability claims** rather than modules, and sequence them so a dated **April 2027 checkpoint** is banked first. Six concrete changes:
+
+1. **Claims replace modules as the unit of progress.** A claim is one falsifiable capability statement ("I can implement KV-cache inference from scratch matching HuggingFace token-for-token"), never a topic ("understand attention"). Its acceptance test is named **up front**. Its timebox is **1–2 weeks** — longer means split. Its terminal event is a **shipped public artifact** (≤1 extra hour, raw, no polish). A claim without its artifact is not done. Phases survive as groupings; claims are the rows.
+2. **The north star is unchanged.** Frontier-lab readiness per `frontier-lab.md`; Feinberg Exercises A and B remain graded capstones. GenHash joins them as a third capstone signal.
+3. **A dated checkpoint is added beneath the north star** in `COURSE_MAP.md` and `CLAUDE.md`: April 2027, EF / founding-engineer readiness, goals (a)–(d). Frontier-lab-ready is a **superset** of founding-engineer-ready — the checkpoint is a waypoint on the same arc, not a substitute for it.
+4. **Phase 3 is dissolved** as a standalone phase. Literature fluency becomes **one paper per week, every week**, matched to the active claim, logged to `papers/READING_LOG.md` in a fixed ≤1-page format. The JAX primer (old 3.J1–J4) becomes ordinary Claims 7–8; *How to Scale Your Model* stays the Phase-4 prerequisite as Claim 9.
+5. **GenHash becomes its own claim block** (Claims 17–20) on the CHECKPOINT path.
+6. **`CLAUDE.md` is rewritten as the operating contract** — role boundaries, session start/end, enforcement rules, honesty rule.
+
+**Why claims.**
+- Modules measure *exposure*; claims measure *capability*. "Finished Module 4" and "can rederive attention cold" are different facts, and only the second one survives an interview.
+- Naming the acceptance test up front is what makes a claim falsifiable. A test written afterwards always describes whatever got built, which is how a course drifts while appearing to progress.
+- The artifact-as-terminal-event closes the `frontier-lab.md` loop directly: the article's whole thesis is that public artifacts are the signal. Making the artifact a *completion condition* rather than a later phase means the signal accumulates continuously instead of depending on reaching Phase 8.
+- The 1–2 week timebox exists because D-0007 already projected 12–18 months. Timeboxes convert that from an estimate into a control.
+
+**Sequencing decisions and reasoning.**
+
+*Budget.* 2026-08-05 → 2027-04-01 is 34.1 weeks. At 12–15 hrs/week that's 410–512 hours. Allocated: **32 claim-weeks + 2 weeks slack** for a single 2-week slip.
+
+*Goal (a)'s ~100M model — reconciled with the existing 12M/30M targets.* Placed as **an extension of the Phase 1 scale-up ladder** (Claim 6, following the ~30M OpenWebText run at Claim 4), **not** as Phase 8's trained model. Reasoning: Phase 8's 12M model exists to prove *the framework works*, not to prove *scale* — it is a different claim, and it sits behind a 3–4 month framework build that would consume the entire checkpoint budget. Phase 1's ladder already terminates in a real trained model on real data, so extending it to ~100M is the cheap path. Phase 8's 12M target is left unchanged and post-checkpoint. "My own implementation" is read as: my architecture and my training loop, with PyTorch as the tensor/autograd backend — not HF `Trainer`. Writing my own autograd for a 100M run is Phase 8's job, not the checkpoint's.
+
+*Feinberg A and B stay as early as prerequisites allow*, because they serve goal (c) and (c) has the longest lead time — an artifact cannot be shared by anyone until it exists. A (Claim 10) lands immediately after the JAX primer and the scaling-book exercises, its true prerequisites. B (Claim 16) lands immediately after kernels-core, since a Pallas fusion kernel is not writable before the roofline reflex and fused attention exist.
+
+*GenHash is sequenced after Phase 1 and after a VQ / perceptual-loss prerequisite* (Claim 17), never before. HiFiC is a GAN-based codec — reproducing it requires working training skills, and benchmarking it requires LPIPS/FID machinery. Attempting it earlier would fail for training reasons that have nothing to do with compression. **Reproduction-first: novelty claims are banned until the Claim 19 benchmark exists.**
+
+*What moved to CONTINUATION, and why each.*
+- **Phase 8 (full framework build)** — 3–4 months standalone; its 12M model cannot serve goal (a); pulling it forward eats the budget. Post-checkpoint.
+- **Phase 5.3/5.4 (QuIP#/QTIP/AQLM reproductions)** — genuinely SOTA and genuinely not required by (a)–(d). Phase 5.1/5.2 (INT8, LLM.int8()) also deferred, but flagged **first up post-checkpoint** — highest interview value of the remainder.
+- **Phase 7 (agents)** — Track 2 of `frontier-lab.md`, valuable, and entirely independent of (a)–(d). Nothing in the checkpoint depends on it.
+- **Phase 6 back half** (paged attention, continuous batching, nano-vLLM, SnapKV) — Claim 21 (KV cache + prefill/decode roofline) banks the interview-relevant core cheaply in 1 week; the full serving loop is a multi-week build with no checkpoint dependency.
+- **Phase 2 back half** (REINFORCE → PPO → real GRPO on a base model → reward-hacking catalog) — Claim 22 banks the *derivation*, which is what goal (d) actually needs. Real GRPO on a GSM8K-tier task is a compute-heavy multi-week run.
+
+*Goal (c) is deliberately not a claim.* No acceptance test can compel a stranger to share your work, and writing one would be dishonest. It is structured instead as ~23 shots on goal — every claim ships an artifact — with Claims 10, 16 and 20 as the highest-probability ones.
+
+**Honest risks recorded at decision time.**
+- **The budget is tight.** Three capstone-grade artifacts plus a 100M scale-up in 32 claim-weeks is aggressive. The compressible block is kernels-core (Claims 11–15); if the schedule slips, that descopes first and Exercise B goes with it. Recorded now so a future descope is a decision, not a surprise.
+- **Goals (a) and (b) both require paid compute** — order a few hundred dollars of A100 time. Free Colab covers neither a ~100M run nor a HiFiC reproduction. Goal (a) asks for documented cost, so this is a deliverable rather than a hidden dependency, but the checkpoint fails without it.
+- **No GenHash source material existed** anywhere in the repo, on the SSD, or in the user's notes when this decision was made. Claims 17–20 were built from the compression spine specified in the restructure brief. **Open thread:** the *learned-hashing* half of "hybrid learned hashing + generative image compression" has no defined role in the ladder. It was deliberately not invented into claims. Resolve before Claim 17 starts.
+
+**Considered, rejected: meta-work.** Recorded here instead of built, per the no-meta-work rule:
+- A claim-tracking CLI / dashboard / status script — considered, rejected: meta-work. `PROGRESS.md` is the tracker.
+- A per-claim directory template + scaffolding generator — considered, rejected: meta-work. `CONVENTIONS.md` already defines the module layout.
+- A CI job to verify parity tests and artifact links — considered, rejected: meta-work. Running the tests is Claim 1's acceptance test; automating it would substitute for doing it.
+- A `READING_LOG.md` entry generator / template filler — considered, rejected: meta-work. The format is 5 lines; typing them is the point.
+- Auto-computing "weeks remaining to checkpoint" from a dated file — considered, rejected: meta-work. The mentor states it at session start from the date.
+
+**What this does NOT change.** Parity tests, `hand_math/`, `evidence/`, cold quizzes, the `REVIEW.md` spaced-repetition queue, the `MENTOR.md` Hard Rules and session protocol, `CONVENTIONS.md`, and `frontier-lab.md` all stand exactly as written. No code, tests, starters, solutions, or phase directories were touched by this restructure. D-0001…D-0007 remain in force; this decision supersedes none of them.
+
+**Revisit when.** At Claim 6 (the ~100M run) — that is the first claim whose cost and duration are genuinely uncertain, and the first real test of whether the 32-week budget holds. Also revisit immediately if any claim runs past its timebox twice, which would mean the 1–2 week box is wrong for this material rather than the claims being wrong.
+
+---
+
+## D-0009 · 2026-08-10 · Phase 0–1 rebuilt in Rust from scratch; replaces Claims 1–4
+
+**Decision.**
+1. **Claims 1–4 are replaced by two Rust claims, R0 and R1.** The from-scratch core is rebuilt in Rust with `std` and the toolchain only — no ndarray, nalgebra, candle, burn, tch, tokenizers, BLAS, or autodiff crate. Design: [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md).
+2. **R0 = the numerical substrate**, **split into R0a and R0b to respect the 1–2 week rule** — R0a = `Scalar` trait, strided tensor, broadcasting, reductions, blocked + threaded matmul (Days 1–8); R0b = tape-based autograd, gradient checker, softmax/cross-entropy, AdamW (Days 9–14). The boundary is natural: both halves have independently falsifiable exits (a GFLOP/s table vs. the naive oracle; a gradient checker watched to fail). **R1 = the first real LLM component** (byte-level BPE + GPT-2 pre-tokenizer, attention, the full forward pass, real-checkpoint logit parity).
+3. **The split is drawn at "would this exist in a physics simulator?"** — because it's the only place both halves get an independently falsifiable exit test: property tests + gradient checking for R0, logit parity for R1.
+4. **Claims 5–6 stay PyTorch on rented GPU.** April-2027 goal (a) — a ~100M model trained end-to-end on my own implementation — survives unchanged.
+5. **Honest estimate: 5 weeks (29 working days, ~72 hrs at 15 hrs/week), not the 2 weeks budgeted.** The overage is accounted for line by line in `RUST_PHASE_0_1.md` §3. Four cards are explicitly 2-day.
+6. **Primary oracle is the real GPT-2 124M checkpoint, not PyTorch fixtures.** Load OpenAI's published weights, match logits to 1e-3, greedy-decode byte-identically.
+
+**Why Rust replaces the Python Phase 0.** Phase 0 was scaffolded and never proven (D-0008), so nothing is lost by rebuilding it. The Rust version is strictly deeper on the axis that matters for the north star: writing the strided memory model, the blocked matmul, the threading, and the autograd tape by hand *is* the kernel track (Track 1), several months before Phase 4 formally starts. A NumPy micrograd rebuild would have proven less.
+
+**Why ~100M cannot be a Rust target.** M4 peak is ~550 GFLOP/s fp32; a good hand-rolled blocked matmul realistically reaches 100–250. GPT-2 124M at Chinchilla-optimal tokens is ~1.9e18 FLOPs ≈ **5 months of continuous compute**. Measured, not assumed. Hence the split: **train at ~20M in Rust, prove correctness at 124M by weight-loading, rent a GPU for 100M.**
+
+**Verification strategy** (`RUST_PHASE_0_1.md` §6) — four independent layers, because there is no numpy oracle:
+1. Property tests (permute round-trip, broadcast scaling, matmul associativity), plus a deliberately naive matmul **retained forever** as the oracle for every optimised kernel.
+2. Central-difference gradient checking **in `f64`** — which is why the `Scalar` trait lands on Day 1 and cannot be retrofitted. Plus a random-projection variant that catches sign errors a plain sum hides.
+3. **Golden files: a narrow yes.** Exactly three PyTorch-generated fixtures (tanh-GELU, LayerNorm, softmax+cross-entropy) with the generator script committed for provenance — the three places hand-derivation is genuinely ambiguous. Rule: a fixture may only be added *after* hand-deriving the value and disagreeing with yourself.
+4. **Logit parity is primary; loss-curve shape is explicitly rejected as an architectural oracle.** A wrong mask, a transposed weight, or erf-instead-of-tanh GELU all still produce a smooth decreasing loss curve. Parity is binary and unforgeable.
+
+**Constraint rulings** (§4) — exceptions argued, not silently relaxed:
+- **KEEP** the GPT-2 pre-tokenizer, scoped to a hand-written state machine for that one pattern, not a regex engine. ~1.5 days, real lesson.
+- **EXCEPTION: safetensors only, never `pytorch_model.bin`.** Pickle is a stack VM — ~1 week, zero learning value, arbitrary-code-execution hazard.
+- **EXCEPTION: no hand-rolled threadpool.** `std::thread::scope` + row chunking gets the full 4× in an hour.
+- **DEFER explicit NEON SIMD to Phase 2.** Build blocked first, measure the auto-vectorisation gap, then decide from data.
+- **KEEP** the hand-rolled PRNG — reproducible gradient checks are impossible without it.
+
+**Design pushback recorded** (§5): build the autograd as a **tape — an arena of nodes indexed by `usize`** — not `Rc<RefCell<Node>>`. The Python object-graph transliteration compiles and then produces runtime borrow panics and leaked cycles. The arena is what the borrow checker wants *and* what reverse-mode AD actually is.
+
+**Honest risks recorded at decision time.**
+- **The training gap is the real cost of this decision.** Old Claims 2–4 were training claims (hygiene, diagnosing broken runs, predicting loss at 30M); R0/R1 are implementation claims. Swapping them directly leaves **zero training experience before Claim 6's ~100M run** — the claim that demands a pre-committed loss prediction and a cost accounting. Placeholder **R2** is recorded in `COURSE_MAP.md` to close it, and is **not yet designed** (Phase 2 was out of scope for the Rust plan). **Design R2 before starting Claim 5; if R2 is cut, restore Claims 2–4 in PyTorch.**
+- **The slack is gone. Arithmetic, so it can be checked:** old Claims 1–4 = 2+1+1+2 = **6w**. New block = R0a (2w) + R0b (2w) + R1 (2w) + R2 (~4w) = **10w boxed**, or **9w on honest estimate** (the designed part is 29 working days ≈ 4.8w, boxed at 6w). Delta = **+3w on estimate, +4w if every box is consumed.** The 2-week slack does not cover either, so the checkpoint is **1–2 weeks over-committed before any slip has occurred.** Per D-0008 the designated descope target remains kernels-core (Claims 11–15), which takes Feinberg Exercise B with it. Recorded now so that descope is a decision, not a surprise.
+  > **STATUS: superseded by D-0010.** R2 moved to CONTINUATION and the PyTorch block (P1 1w + P2 1w) replaced it. The corrected arithmetic is 6w → 8w, **delta +2w**, which the 2-week slack covers exactly. The checkpoint has zero slack remaining but is **not** over-committed. The figures above stand as the audit trail of what was believed on 2026-08-10 before D-0010.
+- **R2's `~4w` is a budget line, not a legal claim.** It exceeds the 1–2 week rule and must be split when designed, exactly as R0 was.
+  > **STATUS: superseded by D-0010.** R2 is no longer on the checkpoint path, so the 1–2 week rule no longer binds it. P1 and P2 are 1w each and comply.
+- **The autograd-vs-borrow-checker day is the schedule risk.** Estimated at 2 days; it is the one card that could plausibly take 4.
+
+**Considered, rejected: meta-work.**
+- A `cargo` workspace generator / project scaffolder — considered, rejected: meta-work. `cargo new` exists.
+- A custom test-runner or gradient-check reporting harness beyond the plain `GradCheckReport` struct — considered, rejected: meta-work. `cargo test` is the runner.
+- A benchmark-tracking dashboard for the matmul GFLOP/s numbers — considered, rejected: meta-work. A committed markdown table is the evidence.
+
+**What this does NOT change.** The north star, the April-2027 checkpoint goals (a)–(d), Claims 5–23, the weekly paper track, `CONVENTIONS.md`, `REVIEW.md`, the `MENTOR.md` Hard Rules, and `frontier-lab.md` all stand. The Python `phase0/` tree is **retained untouched** as trail — it is superseded, not deleted.
+
+**Revisit when.** At the end of R0. If the substrate took more than 3.5 weeks, R1's 2-week box is wrong too and the whole Rust track needs rescoping against the checkpoint rather than absorbing the slip silently.
+
+---
+
+## D-0010 · 2026-08-10 · PyTorch block replaces Rust R2; Simple English adopted as the docs standard
+
+**Decision.**
+1. **R2 (train the ~20M model in Rust) moves to CONTINUATION.** Two PyTorch claims replace it: **P1** (rebuild GPT-2 in PyTorch, 3-way parity against the Rust version, 1w) and **P2** (training hygiene + 3 timed broken-run diagnoses, 1w).
+2. **The constraint reverses on purpose at P1.** Everything through R1 is `std` only. From P1 onward, use any library. The Rust work proves the theory. The PyTorch block buys the tool.
+3. **pandas is out of scope.** It does nothing for language-model work. Adding it would pad the week.
+4. **[Simple English (ASD-STE100)](.claude/skills/simple-english/SKILL.md) is the docs standard.** The skill is vendored at `course/.claude/skills/simple-english/` so later sessions load it automatically.
+5. **Three Rust reference projects are recorded in `RESOURCES.md` with a read-after gate.** Read each one only after your own version of that component passes its test.
+6. **Mermaid roadmap diagrams** are added to `COURSE_MAP.md` (whole ladder) and `RUST_PHASE_0_1.md` (whole track, Phase 0, Phase 1, verification layers).
+
+**Why the PyTorch block, and why it replaces R2.** D-0009 recorded a real hole: R0a/R0b/R1 are *implementation* claims, so swapping them for old Claims 2–4 left **zero training experience before Claim 6's ~100M run**. The PyTorch block closes that hole directly, because old Claims 2–4 were PyTorch training claims. Two facts make it cheap. The theory is already banked by the Rust work, so only the API is new. And Claims 5–6 need PyTorch fluency regardless, so this is a prerequisite rather than a detour.
+
+**Why R2 does not survive as a checkpoint claim.** Goal (a) is a ~100M run on rented GPU, in PyTorch. Training the 20M in Rust is the purer artifact and it serves no checkpoint goal. Keeping both cost about 4 extra weeks and would have made kernels-core (Claims 11–15, taking Feinberg Exercise B with it) the near-certain descope. The Rust engine stays capable of the run — Phase 2 is a config-and-compute problem, which was the design goal from the start.
+
+**Budget arithmetic, so it can be checked.** Old Claims 1–4 = 2+1+1+2 = **6w**. New block = R0a (2w) + R0b (2w) + R1 (2w) + P1 (1w) + P2 (1w) = **8w**. Delta = **+2w**. The 2 weeks of slack cover this exactly. **This corrects D-0009, which recorded +3w to +4w against a ~4w R2 that no longer exists.** The checkpoint is fully committed with zero slack remaining, but it is not over-committed.
+
+**Why Simple English, and where it does not apply.** ASD-STE100 is a controlled language for maintenance documentation. Its rules — 20 words per instruction, 25 per description, simple tenses, active voice, one instruction per sentence, condition before command, no `should`/`would`/`may`/`might` — make an instruction survive one read. The skill's own **Limits** section states: do not apply it to marketing copy, blog voice or brand writing, because it deletes persuasion by design. **The LinkedIn hooks are blog voice and stay in my own voice.** So does the reasoning prose in this decision log — a decision log records argument, not procedure.
+
+**Honest risks recorded at decision time.**
+- **P1 and P2 at 1 week each are tight.** They are only credible because the theory is already banked. If P1 overruns, the cause is NumPy/PyTorch API friction, not concepts — that is a signal to drill the API, not to extend the box.
+- **Zero slack remains.** Any slip now comes out of kernels-core. Recorded so that descope is a decision, not a surprise.
+- **The three Rust reference projects all break the `std`-only constraint** — RustGPT and the Reddit build use `ndarray`, and llms-from-scratch-rs uses `candle`. `ndarray` starts where Day 8 ends. Reading them early imports design decisions before the problem those decisions solve is understood. Hence the read-after gate.
+
+**Considered, rejected: meta-work.**
+- A doc linter that checks STE sentence limits in CI — considered, rejected: meta-work. The skill has a self-check step.
+- A script to regenerate the mermaid diagrams from the claim tables — considered, rejected: meta-work. The tables change a few times a year.
+- Forking or vendoring the three Rust reference repos locally — considered, rejected: meta-work. Links plus a read-after gate is the whole value.
+
+**What this does NOT change.** The north star, checkpoint goals (a)–(d), R0a/R0b/R1 as designed, Claims 5–23, the weekly paper track, `CONVENTIONS.md`, `REVIEW.md`, the `MENTOR.md` Hard Rules, and `frontier-lab.md` all stand. The Python `phase0/` tree stays untouched as trail. `/Volumes/Mrigesh SSD/llm-scratch/` is the pre-restructure clone and is marked stale, not deleted.
+
+**Revisit when.** At the end of P1. If a 3-way parity table took more than 1 week with the theory already banked, then P2's box is wrong too, and the PyTorch block needs rescoping before Claim 5.
