@@ -21,14 +21,17 @@ This repo *is* that public artifact, built in real time. The point is **proof, n
 
 A claim is one falsifiable capability statement — "I can implement KV-cache inference from scratch matching HuggingFace token-for-token" — never a topic. Each has an acceptance test named up front, a 1–2 week timebox, and a shipped public artifact as its terminal event. **A claim without its artifact is not done.**
 
-**23 claims on the checkpoint path.** Currently proven: **0**. Active: Claim 1 — closing Phase 0 with a cold-start proof.
+**24 claims on the checkpoint path.** Currently proven: **0**. Active: **Claim R0a** — a strided tensor library and a cache-blocked matmul, in Rust, from nothing.
+
+> **Pivot, 2026-08-10 ([D-0009](DECISIONS.md)).** The from-scratch core is being rebuilt in **Rust with `std` only** — no ndarray, nalgebra, candle, burn, tch, tokenizers, BLAS, or autodiff crate. Own tensor, own strided memory model, own matmul, own autograd, own BPE. It ends by loading OpenAI's real GPT-2 124M checkpoint and reproducing its output token-for-token. Python `phase0/` is retained untouched as trail — superseded, not deleted. Full design: [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md).
 
 Phases survive as groupings; claims are the rows. Full ladder with acceptance tests: [`COURSE_MAP.md`](COURSE_MAP.md).
 
 | Grouping | Claims | Path |
 |---|---|---|
-| **Phase 0** — from-scratch core | 1 | checkpoint |
-| **Phase 1** — real training → **~100M model end-to-end** | 2–6 | checkpoint |
+| **Phase 0–1 (Rust)** — tensor + matmul → autograd → **GPT-2 124M logit parity** | R0a, R0b, R1 | checkpoint |
+| **PyTorch block** — rebuild GPT-2, 3-way parity vs Rust → training hygiene + 3 timed broken-run diagnoses | P1, P2 | checkpoint |
+| **Phase 1 (PyTorch)** — LoRA → **~100M model end-to-end** on rented GPU | 5–6 | checkpoint |
 | **JAX + scaling** — primer, then every scaling-book exercise | 7–9 | checkpoint |
 | **Phase 4** — kernels: roofline → CUDA → Triton → Pallas. Includes **Feinberg Exercise A** | 10–15 | checkpoint |
 | **Phase 5** — **Feinberg Exercise B** (Pallas `ragged_dot` beater) | 16 | checkpoint |

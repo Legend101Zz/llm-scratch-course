@@ -29,7 +29,7 @@ Committed loss curves, a written failure-mode log (what diverged, what I changed
 HiFiC reproduced at small scale, benchmarked against JPEG XL on Kodak with LPIPS/SSIM/FID and my own plots, plus an honest "here's where the field actually is" writeup positioning it against Control-GIC and the VQ-codec literature. Banked by **Claims 17–20**.
 
 **(c) At least one public artifact that a recognizable ML person shared unprompted.**
-This one cannot be forced by a claim — nobody can be made to share your work. It is structured as ~23 shots on goal: every claim ships an artifact. The three highest-probability shots are **Claim 10** (Feinberg Exercise A), **Claim 16** (Feinberg Exercise B), and **Claim 20** (the GenHash benchmark writeup).
+This one cannot be forced by a claim — nobody can be made to share your work. It is structured as ~24 shots on goal: every claim ships an artifact. The three highest-probability shots are **Claim 10** (Feinberg Exercise A), **Claim 16** (Feinberg Exercise B), and **Claim 20** (the GenHash benchmark writeup).
 
 **(d) I can pass a founding-engineer depth interview at a serious AI company cold.**
 Rederive backprop, attention, Chinchilla and a roofline on demand with no notes; defend the 100M run's failure modes; defend the GenHash benchmark; whiteboard the fused-attention kernel. Graded honestly against an unseen mock. Banked by **Claim 23**, fed continuously by `REVIEW.md`.
@@ -60,7 +60,9 @@ Phase 0 is **scaffolded, not proven**. Every module has prose, starter, solution
 - No `evidence/` output exists. Same.
 - The cold quiz (`REVIEW.md` R-001 … R-008) was posed and **paused**. Never taken.
 
-So: nothing in Phase 0 is proven. **Claim 1 is closing Phase 0 with a cold-start proof.** Everything downstream is `⬜ not started`.
+So: nothing in Phase 0 is proven — and per **D-0009 (2026-08-10) it is not going to be closed in Python.** Because Phase 0 was only ever scaffolded, nothing is lost by rebuilding it, so the from-scratch core is being rebuilt in **Rust with `std` only** — strictly deeper on the axis the north star cares about. The Python `phase0/` tree is retained untouched as trail: superseded, not deleted.
+
+**The active claim is R0a — the strided tensor and the blocked matmul.** Everything downstream is `⬜ not started`.
 
 Status legend: ⬜ not started · 🟨 in progress · ✅ proven (test run, quiz passed, artifact shipped).
 
@@ -71,19 +73,75 @@ Status legend: ⬜ not started · 🟨 in progress · ✅ proven (test run, quiz
 `CP` = on the CHECKPOINT path (required for April 2027). `CONT` = continuation, post-checkpoint.
 One paper per week, every week, matched to the active claim. Log format: [`papers/READING_LOG.md`](papers/READING_LOG.md).
 
-### Phase 0 — From-scratch core
+### The whole ladder, in one picture
+
+```mermaid
+flowchart TD
+    classDef active fill:#b8860b,stroke:#6b4e06,color:#fff
+    classDef rust fill:#8b3a1a,stroke:#4d1f0d,color:#fff
+    classDef py fill:#1e5a8a,stroke:#0d2f4d,color:#fff
+    classDef jax fill:#2d6b5a,stroke:#153a30,color:#fff
+    classDef kern fill:#6b3a8b,stroke:#3a1f4d,color:#fff
+    classDef gen fill:#8b1a4a,stroke:#4d0d28,color:#fff
+    classDef goal fill:#1f6f43,stroke:#0d3d24,color:#fff
+    classDef cont fill:#5a5a5a,stroke:#2a2a2a,color:#bbb,stroke-dasharray: 5 5
+
+    S(["<b>START HERE</b><br/>Rust, std only"]):::active
+    S --> R0a["<b>R0a</b> 2w · tensor, strides, blocked matmul"]:::active
+    R0a --> R0b["<b>R0b</b> 2w · tape autograd, gradcheck, AdamW"]:::rust
+    R0b --> R1["<b>R1</b> 2w · BPE, attention, GPT-2<br/><b>logit parity vs real checkpoint</b>"]:::rust
+    R1 --> P1["<b>P1</b> 1w · rebuild in PyTorch<br/>3-way parity vs Rust"]:::py
+    P1 --> P2["<b>P2</b> 1w · training hygiene<br/>3 broken runs, timed"]:::py
+    P2 --> C5["<b>5</b> 1w · LoRA from scratch"]:::py
+    C5 --> C6["<b>6</b> 2w · <b>~100M end-to-end</b><br/>rented GPU + cost table"]:::py
+    C6 --> GA(["<b>GOAL (a)</b> banked"]):::goal
+
+    C6 --> C7["<b>7–9</b> 3w · JAX + every<br/>scaling-book exercise"]:::jax
+    C7 --> C10["<b>10</b> 2w · <b>Feinberg Exercise A</b><br/>TPU transformer + Chinchilla"]:::kern
+    C10 --> C11["<b>11–15</b> 5w · roofline → CUDA<br/>→ Triton → fused attention"]:::kern
+    C11 --> C16["<b>16</b> 2w · <b>Feinberg Exercise B</b><br/>Pallas beats ragged_dot"]:::kern
+    C16 --> C17["<b>17–20</b> 5w · <b>GenHash</b><br/>VQ → HiFiC → Kodak → writeup"]:::gen
+    C17 --> GB(["<b>GOAL (b)</b> banked"]):::goal
+    C17 --> C21["<b>21</b> 1w · KV cache + roofline"]:::py
+    C21 --> C22["<b>22</b> 1w · GRPO derived cold"]:::py
+    C22 --> C23["<b>23</b> · <b>depth interview, cold</b>"]:::goal
+    C23 --> GD(["<b>GOAL (d)</b> banked"]):::goal
+
+    R1 -.-> R2C["R2 · train ~20M in Rust"]:::cont
+    C11 -.-> CONT["Quantization · serving loop<br/>real GRPO · agents · Phase 8"]:::cont
+
+    GC(["<b>GOAL (c)</b> — no claim can force this.<br/>24 shots on goal. Best: 10, 16, 20."]):::goal
+```
+
+**Colour key.** 🟫 Rust, `std` only · 🟦 PyTorch · 🟩 JAX/TPU · 🟪 kernels · 🟥 GenHash · ⬜ dashed = CONTINUATION, after April 2027.
+
+---
+
+### Phase 0–1 — GPT-2 in Rust, from nothing (replaces old Claims 1–4, per D-0009)
+
+Full day-by-day design, verification strategy and constraint rulings: [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md).
+Constraint: Rust `std` + toolchain only. No ndarray, nalgebra, candle, burn, tch, tokenizers, BLAS, or autodiff crate.
 
 | # | Claim | Acceptance test | Box | Artifact | Path | Paper |
 |---|---|---|---|---|---|---|
-| **1** | I can rebuild the Phase 0 transformer stack from a blank file and prove it matches PyTorch. | Every `phase0/*/test.py` passes in my venv, output captured to `evidence/`; capstone `train.py` reaches < 2.0 nats by step 2000; ≥1 `hand_math/` derivation per module; cold quiz R-001…R-008 scored ≥6/8 **with R-001, R-002, R-004 all correct**. | 2w | Post: the loss curve + the numpy↔torch parity numbers, including anything that failed first. | **CP** | Attention Is All You Need — re-read with my own Module 4/5 open in the other tab. |
+| **R0a** | I can implement a strided, broadcasting tensor library in Rust with a cache-blocked multithreaded matmul, and prove it correct with no reference implementation. | Property tests green (permute round-trip, broadcast scaling, matmul associativity, `(AB)ᵀ=BᵀAᵀ`); `blocked_matches_naive` at non-multiple-of-block sizes; committed GFLOP/s table vs. block size and thread count, with measured % of the M4's ~550 GFLOP/s peak. | 2w | Post: the blocking result — same FLOPs, same output, N× faster — with the roofline arithmetic. | **CP** | Attention Is All You Need — re-read with my own attention code open in the other tab. |
+| **R0b** | I can implement reverse-mode autodiff over that library, unaided, and prove every gradient correct with no reference implementation. | `all_ops_gradchecked` passes for **every** op (central-difference in `f64`, rel. err < 1e-5) **and has been watched to fail** under an injected bug; the projected variant catches a sign flip the plain sum misses; two-spiral MLP >99% train acc. on my own AdamW; loss curve in `evidence/`. | 2w | Post: the tape-vs-`Rc<RefCell>` design story + the gradient-checker-that-catches-its-own-bugs. | **CP** | AdamW (Loshchilov & Hutter 2017). |
+| **R1** | I can load OpenAI's published GPT-2 124M checkpoint into my own Rust implementation and reproduce its output token-for-token. | max \|logit_mine − logit_ref\| < 1e-3 over the full 50257 vocab for 3 fixed prompts; 20-token greedy decode **byte-identical** to the HF reference string; `tiktoken_parity` 200/200; `param_count_is_124m` = 124,439,808. `evidence/parity.md` committed. | 2w | Post + terminal recording: my Rust GPT-2 emitting the same 20 tokens as OpenAI's. | **CP** | GPT-2 (Radford 2019) — read for the architecture deltas I had to implement. |
 
 ### Phase 1 — Real training & fine-tuning → banks goal (a)
 
 | # | Claim | Acceptance test | Box | Artifact | Path | Paper |
 |---|---|---|---|---|---|---|
-| **2** | I can train a GPT with real hygiene and justify every schedule choice from the loss curve. | Warmup + cosine LR, grad clipping, bf16, eval intervals, checkpoint/resume on tinyshakespeare → ≤1.4 nats. Each choice defended in writing against an ablation or a cited reason. | 1w | Post: the hygiene checklist + what changed when I removed each piece. | **CP** | GPT-2 (Radford 2019) — name the 3 things that differ from my capstone. |
-| **3** | I can diagnose a broken training run from loss / grad-norm / param-norm signals alone in under 15 minutes. | 3 deliberately broken runs (bad LR, missing LayerNorm, masking bug). Each diagnosed **timed, under 15 min**, without reading the diff. Logged to `evidence/debug_log.md`. | 1w | Post: the three failure signatures, with the curves. | **CP** | AdamW (Loshchilov & Hutter 2017). |
-| **4** | I can scale to ~30M on an OpenWebText subset and predict the final loss before I launch the run. | 30M model trained; perplexity logged; LR ablation run; **predicted final loss committed before launch**, within 10% of actual. | 2w | Post: predicted-vs-actual, and why the gap was what it was. | **CP** | Chinchilla (Hoffmann 2022) — **derive N:D ≈ 1:20 by hand from the parametric loss.** `hand_math/` gate. |
+### The PyTorch block — libraries allowed, theory already banked (per D-0010)
+
+Everything above is `std` only. **This block reverses the constraint on purpose.** The Rust work proves the theory; this block buys the tool everyone actually trains in. It closes the training gap that R0a/R0b/R1 leave open, and Claims 5–6 need PyTorch fluency regardless. **pandas is not in scope — it does nothing for language-model work.**
+
+| # | Claim | Acceptance test | Box | Artifact | Path | Paper |
+|---|---|---|---|---|---|---|
+| **P1** | I can rebuild GPT-2 in PyTorch and show it agrees with my Rust implementation numerically. | GPT-2 124M rebuilt with `torch.nn`. **3-way parity:** my Rust ↔ my PyTorch ↔ HuggingFace, max logit delta < 1e-4 on the same 3 prompts. NumPy/PyTorch drills passed (broadcasting, `einsum`, in-place vs. autograd traps). A written list of every place the framework does something my Rust does not. | 1w | Post: what a framework actually buys you, measured — lines of code, wall-clock, and the 3-way parity table. | **CP** | GPT-2 (Radford 2019) — re-read now that I have implemented it twice. |
+| **P2** | I can train a GPT with real hygiene and diagnose a broken run from loss / grad-norm / param-norm alone in under 15 minutes. | Warmup + cosine LR, grad clipping, bf16, eval intervals, checkpoint/resume on tinyshakespeare → ≤1.4 nats, each choice defended against an ablation. Then **3 deliberately broken runs (bad LR, missing LayerNorm, masking bug), each diagnosed timed under 15 min, without reading the diff.** Logged to `evidence/debug_log.md`. | 1w | Post: the three failure signatures, with the curves. | **CP** | AdamW (Loshchilov & Hutter 2017) → Chinchilla (Hoffmann 2022) — **derive N:D ≈ 1:20 by hand.** `hand_math/` gate. |
+
+> **R2 (train the ~20M in Rust) moved to CONTINUATION by D-0010.** It is the purer artifact but it does not serve the checkpoint: goal (a) is a ~100M PyTorch run on rented GPU. Keeping both cost ~4 extra weeks and would have made kernels-core the near-certain descope. The Rust engine stays capable of it — Phase 2 is a config-and-compute problem, which was the design goal all along.
 | **5** | I can implement LoRA from scratch and show ~1% trainable params measurably changes behavior. | No `peft`. Low-rank decomposition written by hand; trainable-param fraction reported; eval improvement on a target style over the base. | 1w | Post: before/after generations + the parameter-count math. | **CP** | LoRA (Hu 2021). |
 | **6** | **I can train a ~100M-param LM end-to-end on my own implementation, and account for its loss curve, failure modes, and dollar cost.** | ~100M model trained to a pre-committed target loss on my own model code (PyTorch as tensor backend; architecture and training loop mine — not HF `Trainer`). Loss curves + failure-mode log + **itemized cost table** committed. Generations sampled. | 2w | Post: the full run writeup — including every divergence and what it cost. | **CP → (a)** | GPT-3 (Brown 2020) — read for the scale framing, not the results. |
 

@@ -27,18 +27,20 @@ Progress is measured in **claims**, not modules. See [`COURSE_MAP.md`](COURSE_MA
 
 ## Active claim
 
-### 🟨 Claim 1 — I can rebuild the Phase 0 transformer stack from a blank file and prove it matches PyTorch.
+### 🟨 Claim R0a — I can implement a strided, broadcasting tensor library in Rust with a cache-blocked multithreaded matmul, and prove it correct with no reference implementation.
+
+> Per **D-0009 (2026-08-10)**, the from-scratch core is rebuilt in **Rust, `std` only** — no ndarray, nalgebra, candle, burn, tch, tokenizers, BLAS, or autodiff crate. This replaces old Claims 1–4. Day-by-day design, verification strategy and constraint rulings: [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md).
 
 **Acceptance test** (fixed up front, not retrofitted):
 
-1. Every `phase0/*/test.py` passes **in my venv**, output captured to each module's `evidence/`.
-2. `phase0/07_phase0_capstone/train.py` reaches **< 2.0 nats by step 2000**, loss curve committed.
-3. **≥1 `hand_math/` derivation per module** (photo or transcription).
-4. Cold quiz `REVIEW.md` R-001…R-008 scored **≥6/8, with R-001, R-002 and R-004 all correct**.
+1. Property tests green: `permute` round-trip on data *and* strides · `broadcast(a).sum() == a.sum() × factor` · `(AB)C ≈ A(BC)` · `(AB)ᵀ == BᵀAᵀ` · `A·I == A`.
+2. `blocked_matches_naive` passes at **non-multiples of the block size** (129×257·257×63), in both `f32` and `f64`.
+3. `parallel_matches_blocked` is **bit-identical**, and invariant across 1/2/4/8 threads.
+4. Committed GFLOP/s table vs. block size and thread count, stating the measured **% of the M4's ~550 GFLOP/s fp32 peak** — with the predicted L1-derived optimal block size written down *before* measuring.
 
-**Timebox:** 2 weeks. **Not yet started — clock not running.**
-**Paper:** Attention Is All You Need — re-read with my own Module 4/5 open in the other tab.
-**Artifact (required to close):** a post with the loss curve and the numpy↔torch parity numbers, including anything that failed first.
+**Timebox:** 2 weeks (Days 1–8 of `RUST_PHASE_0_1.md`). **Not yet started — clock not running.**
+**Paper:** Attention Is All You Need — re-read with my own attention code open in the other tab.
+**Artifact (required to close):** a post on the blocking result — same FLOPs, same output, N× faster — with the roofline arithmetic that predicted it.
 
 **Proven so far: nothing.** See below.
 
@@ -55,15 +57,17 @@ Phase 0 is **scaffolded, not proven**. Every module has prose, starter, solution
 - **No `evidence/` output exists.** No `test_output.txt`, no `metrics.json`, no `loss_curve.png`, no `roofline.md`. Same reason.
 - **The cold quiz was never taken.** R-001…R-008 were posed in session 01 and paused for gap closure. Still pending.
 
-**Claim 1 is exactly this gap.** The runbook is [`phase0/PHASE0_CLOSURE.md`](phase0/PHASE0_CLOSURE.md) — read it first.
+**This gap is no longer closed in Python.** Per D-0009, because Phase 0 was only ever scaffolded, nothing is lost by rebuilding it — so the from-scratch core is being rebuilt in Rust, which is strictly deeper on the axis the north star cares about. `phase0/` and `PHASE0_CLOSURE.md` are **retained untouched as trail: superseded, not deleted.**
 
-**Everything downstream (Claims 2–23) is ⬜ not started.**
+**Everything downstream (R0b, R1, P1, P2, Claims 5–23) is ⬜ not started.**
 
 ---
 
 ## Checkpoint status
 
-**April 2027 · 34 weeks out as of 2026-08-05 · 32 claim-weeks budgeted + 2 weeks slack.**
+**April 2027 · ~33 weeks out as of 2026-08-10 · 32 claim-weeks budgeted + 2 weeks slack.**
+
+> ⚠ **The slack is fully spent, but the checkpoint is not over-committed.** Arithmetic, so it can be checked: old Claims 1–4 = 2+1+1+2 = **6w**. New block = R0a (2w) + R0b (2w) + R1 (2w) + P1 (1w) + P2 (1w) = **8w**. Delta = **+2w**, which the 2 weeks of slack cover exactly. **This corrects the earlier +3w/+4w figure**, which assumed a ~4w Rust R2 that D-0010 moved to CONTINUATION. Zero slack now remains, so any slip comes out of kernels-core (Claims 11–15), taking Feinberg Exercise B with it. Recorded so that descope stays a decision, not a surprise.
 
 | Goal | Banked by | State |
 |---|---|---|
@@ -72,19 +76,21 @@ Phase 0 is **scaffolded, not proven**. Every module has prose, starter, solution
 | (c) A public artifact a recognizable ML person shared unprompted | structural; best shots Claims 10, 16, 20 | ⬜ |
 | (d) Pass a founding-engineer depth interview cold | Claim 23 | ⬜ |
 
-**Claims proven: 0 / 23.**
+**Claims proven: 0 / 24.**
 
 ---
 
 ## Blockers / open questions
 
-- **None blocking.** Claim 1 can start immediately — it needs only a venv and my own time.
+- **None blocking.** R0a can start immediately — `rustc 1.91.1` is installed and it needs nothing else.
 
 **Open questions for me:**
 
+- ~~R2 is undesigned, and it is the training gap.~~ **Closed by D-0010.** The PyTorch block (P1, P2) fills it. R2 moved to CONTINUATION.
+- **The three PyTorch fixtures need one Colab session** (tanh-GELU, LayerNorm, softmax+CE), plus the Layer-4 reference oracles (block statistics, GPT-2 logits for 3 prompts, 200 tiktoken pairs). Torch is **not installed locally** — this is a scheduled errand, due before Day 21.
 - Hand-derivations as paper-photo or transcribed LaTeX? (Affects `hand_math/` file types; both are documented per module.)
-- Am I OK screen-recording build sessions from Claim 1 onward? Claim 10 (Exercise A) requires a recording — practise the habit early rather than panicking then.
-- **Compute budget.** Goals (a) and (b) both need paid GPU time — order a few hundred dollars of A100 hours across Claim 6 and Claims 17–19. Free Colab does not cover either. This needs answering well before Claim 4, not at Claim 6.
+- Am I OK screen-recording build sessions from R0a onward? Claim 10 (Exercise A) requires a recording — practise the habit early rather than panicking then.
+- **Compute budget.** Goals (a) and (b) both need paid GPU time — order a few hundred dollars of A100 hours across Claim 6 and Claims 17–19. Free Colab does not cover either. Answer this before Claim 5, not at Claim 6.
 
 ## Stalled / parked items
 
