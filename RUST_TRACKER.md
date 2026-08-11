@@ -43,16 +43,18 @@ One crate holds R0a, R0b and R1. Binaries arrive at R1 under `src/bin/`.
 
 This block applies to every day below. It is here once, not six times.
 
-1. [ ] Open `PROGRESS.md` and this file. Tell me the active claim and the days left.
-2. [ ] Quiz me cold on the `REVIEW.md` items that are due, and on the concept of the prior day.
+**"You" is always Mrigesh.** Where the actor is the mentor, the step names Claude.
+
+1. [ ] Open `PROGRESS.md` and this file. Claude states the active claim and the days left.
+2. [ ] Claude quizzes you cold on the due `REVIEW.md` items and the concept of the prior day.
 3. [ ] Read the prereq pages **before** you write code. The pages are on the day card.
-4. [ ] Ask me for the failing test file. **I write the tests. You write the code.**
+4. [ ] Ask Claude for the failing test file. **Claude writes the tests. You write the code.**
 5. [ ] Run the tests. Watch them fail. A test that never failed proves nothing.
 6. [ ] Write the code. Make the tests pass.
 7. [ ] Do the self-check on paper. Photograph the paper into `hand_math/`.
 8. [ ] Record the session. Post the day hook on LinkedIn.
-9. [ ] Update `PROGRESS.md`, the devlog, and `REVIEW.md`.
-10. [ ] Commit and push.
+9. [ ] Claude updates `PROGRESS.md`, the devlog, and `REVIEW.md`.
+10. [ ] Claude commits and pushes.
 
 **The rule that makes the tests real:** write the test, watch it fail, then write the code. A test written after the code passes for the wrong reason.
 
