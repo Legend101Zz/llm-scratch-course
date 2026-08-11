@@ -39,6 +39,7 @@ Progress is measured in **claims**, not modules. See [`COURSE_MAP.md`](COURSE_MA
 4. Committed GFLOP/s table vs. block size and thread count, stating the measured **% of the M4's ~550 GFLOP/s fp32 peak** — with the predicted L1-derived optimal block size written down *before* measuring.
 
 **Timebox:** 2 weeks (Days 1–8 of `RUST_PHASE_0_1.md`). **Not yet started — clock not running.**
+**Day-by-day checklist:** [`RUST_TRACKER.md`](RUST_TRACKER.md). Day 0 sets up the crate and starts the clock.
 **Paper:** Attention Is All You Need — re-read with my own attention code open in the other tab.
 **Artifact (required to close):** a post on the blocking result — same FLOPs, same output, N× faster — with the roofline arithmetic that predicted it.
 
