@@ -8,12 +8,12 @@
 
 **Timebox: 2 weeks. 9 working days. Day 7 takes 2 days.**
 
-**Timebox start date: `____________`** ← write the date here on Day 0. The clock starts then.
+**Timebox start date: `11th August 2026`** .
 
-| Week | Days | What lands |
-|---|---|---|
-| **Week 1** | 1–6 | Trait, PRNG, strides, views, broadcast, reductions, the naive matmul oracle |
-| **Week 2** | 7–8 | Blocked matmul, scoped threads, the GFLOP/s table, the gate |
+| Week       | Days | What lands                                                                  |
+| ---------- | ---- | --------------------------------------------------------------------------- |
+| **Week 1** | 1–6  | Trait, PRNG, strides, views, broadcast, reductions, the naive matmul oracle |
+| **Week 2** | 7–8  | Blocked matmul, scoped threads, the GFLOP/s table, the gate                 |
 
 This file covers **R0a only**. R0b (Days 9–14) gets its own section after you pass Gate R0a. Plan one claim at a time.
 
@@ -26,14 +26,14 @@ Do this once. Do not skip the `criterion` line, because Day 7 needs it.
 **Crate location: `course/rust/`. One library crate. The package name is `rustgpt`.**
 One crate holds R0a, R0b and R1. Binaries arrive at R1 under `src/bin/`.
 
-- [ ] Run `rustc --version`. Confirm 1.91 or newer.
-- [ ] From `course/`, run `cargo new --lib --name rustgpt rust`.
-- [ ] Add `criterion = "0.5"` under `[dev-dependencies]` in `rust/Cargo.toml`.
-- [ ] Add `rust/target/` to `course/.gitignore`.
-- [ ] Run `cargo test` inside `rust/`. Confirm it builds and reports 0 tests.
-- [ ] Run `cargo clippy`. Confirm it is clean.
-- [ ] Write the current date in the **Timebox start date** line above.
-- [ ] Commit the empty crate. The first commit is the start of the trail.
+- [x] Run `rustc --version`. Confirm 1.91 or newer.
+- [x] From `course/`, run `cargo new --lib --name rustgpt rust`.
+- [x] Add `criterion = "0.5"` under `[dev-dependencies]` in `rust/Cargo.toml`.
+- [x] Add `rust/target/` to `course/.gitignore`.
+- [x] Run `cargo test` inside `rust/`. Confirm it builds and reports 0 tests.
+- [x] Run `cargo clippy`. Confirm it is clean.
+- [x] Write the current date in the **Timebox start date** line above.
+- [x] Commit the empty crate. The first commit is the start of the trail.
 
 > **CAUTION: Do not add any other dependency.** Banned for R0a, R0b and R1: `ndarray`, `nalgebra`, `candle`, `burn`, `tch`, `tokenizers`, any BLAS, any autodiff crate. `criterion` is the one exception, and it is a dev-dependency.
 
@@ -66,13 +66,13 @@ This block applies to every day below. It is here once, not six times.
 
 [Day card](RUST_PHASE_0_1.md#day-1--the-scalar-trait-and-a-prng-you-own)
 
-- [ ] **Read (25 min).** *Programming Rust* pp. 235–252. Skim only.
+- [ ] **Read (25 min).** _Programming Rust_ pp. 235–252. Skim only.
 - [ ] Create `src/scalar.rs` and `src/rng.rs`. Declare both in `src/lib.rs`.
 - [ ] Write the `Scalar` trait with the supertrait bounds and the two constants.
 - [ ] Implement `Scalar for f32`.
 - [ ] Implement `Scalar for f64`.
 - [ ] Write `Rng::seed`. Reject a seed of 0.
-- [ ] Write `Rng::next_u64` as xorshift64*.
+- [ ] Write `Rng::next_u64` as xorshift64\*.
 - [ ] Write `Rng::uniform` and `Rng::normal`. Use Box-Muller for `normal`.
 
 **Tests**
@@ -97,7 +97,7 @@ This block applies to every day below. It is here once, not six times.
 
 [Day card](RUST_PHASE_0_1.md#day-2--storage-shape-strides)
 
-- [ ] **Read (20 min).** *Programming Rust* pp. 57–63 and pp. 90–92.
+- [ ] **Read (20 min).** _Programming Rust_ pp. 57–63 and pp. 90–92.
 - [ ] Create `src/tensor.rs`.
 - [ ] Write the `Tensor<T>` struct with `data`, `shape`, `strides` and `offset`.
 - [ ] Write `contiguous_strides`.
@@ -128,7 +128,7 @@ This block applies to every day below. It is here once, not six times.
 
 [Day card](RUST_PHASE_0_1.md#day-3--zero-copy-views-reshape-permute-transpose-slice)
 
-- [ ] **Read (20 min).** *Programming Rust* pp. 148–158.
+- [ ] **Read (20 min).** _Programming Rust_ pp. 148–158.
 - [ ] Write the `ShapeError` enum with its four variants.
 - [ ] Write `reshape`. Return `Err(NotContiguous)` instead of a silent copy.
 - [ ] Write `permute`.
@@ -160,7 +160,7 @@ This block applies to every day below. It is here once, not six times.
 
 [Day card](RUST_PHASE_0_1.md#day-4--broadcast-and-elementwise-ops)
 
-- [ ] **Read (25 min).** *Programming Rust* pp. 303–312 and pp. 330–344.
+- [ ] **Read (25 min).** _Programming Rust_ pp. 303–312 and pp. 330–344.
 - [ ] Write `broadcast_shapes`. Align the shapes from the trailing axis.
 - [ ] Write `broadcast_to`. Give the broadcast axis **stride 0**.
 - [ ] Write `map`.
@@ -190,7 +190,7 @@ This block applies to every day below. It is here once, not six times.
 
 [Day card](RUST_PHASE_0_1.md#day-5--reductions)
 
-- [ ] **Read (20 min).** *Programming Rust* pp. 345–354.
+- [ ] **Read (20 min).** _Programming Rust_ pp. 345–354.
 - [ ] Write `sum_axis` with `keepdim`.
 - [ ] Write `mean_axis`.
 - [ ] Write `max_axis`.
@@ -220,7 +220,7 @@ This block applies to every day below. It is here once, not six times.
 
 Today you write the slowest correct matmul. **You keep it for the whole project.** It is the oracle for every faster version.
 
-- [ ] **Read (15 min).** *Programming Rust* pp. 178–182.
+- [ ] **Read (15 min).** _Programming Rust_ pp. 178–182.
 - [ ] Create `src/matmul.rs`.
 - [ ] Write `matmul_naive`. Three nested loops. No cleverness.
 - [ ] Add the comment `/// Reference implementation. NEVER optimise this. It is the oracle.`
@@ -264,7 +264,7 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 
 **Predict before you measure.** Write the predicted best block size on paper first. The prediction is part of the exit artifact.
 
-- [ ] **Read (20 min).** *Programming Rust* pp. 161–165. Then skim the criterion "Getting Started" page.
+- [ ] **Read (20 min).** _Programming Rust_ pp. 161–165. Then skim the criterion "Getting Started" page.
 - [ ] Compute the predicted best block size from the 128 KB L1D of the M4. Write the number down.
 - [ ] Write `matmul_blocked`.
 - [ ] Add the `[[bench]]` section to `Cargo.toml` with `harness = false`.
@@ -293,7 +293,7 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 
 [Day card](RUST_PHASE_0_1.md#day-8--parallelism-with-scoped-threads)
 
-- [ ] **Read (30 min).** *Programming Rust* pp. 457–466. Read the Rayon section to learn what you leave out.
+- [ ] **Read (30 min).** _Programming Rust_ pp. 457–466. Read the Rayon section to learn what you leave out.
 - [ ] Write `matmul_parallel`. Partition the output **by rows**.
 - [ ] Use `std::thread::scope`. Use no `Arc` and no `Mutex`.
 - [ ] Predict the speedup at 10 threads against 4 threads. Write the number down.
@@ -331,11 +331,11 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 
 Do not plan these now. They expand at their gates.
 
-| Claim | Days | Cards | Exit test |
-|---|---|---|---|
-| **R0b** | 9–14 | Tape, backward, gradient checker, softmax, cross-entropy, AdamW | Every op passes `grad_check` in `f64`. You watched the checker fail. |
-| **R1** | 15–25 | BPE, embeddings, LayerNorm, attention, GELU, blocks, safetensors, parity | Logit parity under 1e-3 against the real GPT-2 124M checkpoint. |
-| **P1** | 1 week | NumPy and PyTorch fluency. Rebuild GPT-2. | A 3-way parity table against the Rust version. |
-| **P2** | 1 week | Training hygiene. | Three timed diagnoses of broken runs. |
+| Claim   | Days   | Cards                                                                    | Exit test                                                            |
+| ------- | ------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| **R0b** | 9–14   | Tape, backward, gradient checker, softmax, cross-entropy, AdamW          | Every op passes `grad_check` in `f64`. You watched the checker fail. |
+| **R1**  | 15–25  | BPE, embeddings, LayerNorm, attention, GELU, blocks, safetensors, parity | Logit parity under 1e-3 against the real GPT-2 124M checkpoint.      |
+| **P1**  | 1 week | NumPy and PyTorch fluency. Rebuild GPT-2.                                | A 3-way parity table against the Rust version.                       |
+| **P2**  | 1 week | Training hygiene.                                                        | Three timed diagnoses of broken runs.                                |
 
 Day 9 is the hardest card in the project. It takes 2 days. Read section 5 of [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) before you start it, and build the tape, not `Rc<RefCell<_>>`.

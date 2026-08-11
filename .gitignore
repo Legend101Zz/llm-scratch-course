@@ -33,3 +33,4 @@ notes.md
 build/
 dist/
 *.egg-info/
+rust/target/
