@@ -32,6 +32,7 @@ The user **doesn't need to peek at the answer key** — the answer key is in the
 | R-008 | Sketch the multi-head attention forward pass with explicit shapes: input `(B, T, d)` → output `(B, T, d)`, all intermediate shapes labeled. | `phase0/04_attention_scratch/README.md` | (cold quiz pending) | – | 2026-05-23 | 0 | – |
 | R-009 | Why does scalar (reverse-mode) autograd work in two passes — forward then backward — and why couldn't you just compute gradients on the forward pass? (Hint: many-to-one structure.) | `phase0/01_autograd/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
 | R-010 | What does the cross-entropy loss become for a single token if the model assigns probability 0.0001 to the correct answer? (Numeric answer expected.) | `phase0/00_start/README.md` | (cold quiz pending) | – | 2026-05-26 | 0 | – |
+| R-011 | Your `Scalar` trait declares `from_f64` and `to_f64` as its own methods. Why not bound the trait on `From<f64>` and `Into<f64>` instead? Answer with who owns the impl, and what the precision boundary costs. | `RUST_PHASE_0_1.md` Day 1 | (due after Day 1) | – | 2026-08-12 | 0 | – |
 
 ---
 

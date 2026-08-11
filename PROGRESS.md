@@ -38,12 +38,17 @@ Progress is measured in **claims**, not modules. See [`COURSE_MAP.md`](COURSE_MA
 3. `parallel_matches_blocked` is **bit-identical**, and invariant across 1/2/4/8 threads.
 4. Committed GFLOP/s table vs. block size and thread count, stating the measured **% of the M4's ~550 GFLOP/s fp32 peak** — with the predicted L1-derived optimal block size written down *before* measuring.
 
-**Timebox:** 2 weeks (Days 1–8 of `RUST_PHASE_0_1.md`). **Not yet started — clock not running.**
-**Day-by-day checklist:** [`RUST_TRACKER.md`](RUST_TRACKER.md). Day 0 sets up the crate and starts the clock.
+**Timebox:** 2 weeks. **Started 2026-08-11.** The clock runs. 9 working days remain, and Day 7 takes 2 of them.
+**Day-by-day checklist:** [`RUST_TRACKER.md`](RUST_TRACKER.md).
 **Paper:** Attention Is All You Need — re-read with my own attention code open in the other tab.
 **Artifact (required to close):** a post on the blocking result — same FLOPs, same output, N× faster — with the roofline arithmetic that predicted it.
 
-**Proven so far: nothing.** See below.
+**Proven so far: nothing.** Day 0 is setup, not a capability. See below.
+
+### R0a day state
+
+- **Day 0 — done (2026-08-11), commit `39952d6`.** The `rust/` crate builds. `criterion 0.5` is the only dev-dependency. `rust/target/` is ignored. Mrigesh ran the commands himself.
+- **Day 1 — open.** `rust/tests/day1.rs` holds the four acceptance tests from the day card, plus one test that a seed of 0 panics. The mentor wrote the tests. `cargo test --test day1` fails to compile, because `src/scalar.rs` and `src/rng.rs` do not exist. **That red is recorded, not hidden.** No implementation exists. No hand-derivation exists. No post is shipped.
 
 ---
 
@@ -126,6 +131,7 @@ Kept as the audit trail. These records describe what was **built and committed**
 
 ### Session log (most recent first)
 
+- **2026-08-11 · 05** — R0a timebox started. Mrigesh completed Day 0 himself: `cargo new --lib --name rustgpt rust`, `criterion` as the single dev-dependency, `rust/target/` ignored, empty crate committed (`39952d6`). The mentor then wrote `rust/tests/day1.rs` — the Day 1 red — and wrote no implementation. The overdue `REVIEW.md` queue (R-001…R-010, all pre-Rust theory) is still unasked.
 - **2026-08-05 · 04** — Restructured the course around capability claims; added the dated April 2027 checkpoint; dissolved Phase 3 into a weekly paper track; added GenHash as a capstone track; rewrote `CLAUDE.md` as the operating contract. Docs only — no code, tests, `hand_math/`, `evidence/`, starters or solutions touched. See [D-0008](DECISIONS.md).
 - **2026-05-23 · 02** — Foundation gap closure. After an honest audit revealed the bootstrap had written discipline conventions but not enforced them, closed three concrete gaps: Module 2 parity test, `hand_math/` + `evidence/` scaffolding across all Phase-0 modules, and the `07_phase0_capstone/` integration module (numpy ↔ torch GPT with parity test + tinyshakespeare training).
 - **2026-05-23 · 01** — Bootstrap: pivoted sprint → journey. All foundation files written. Modules 3/4/5/6 patches.
