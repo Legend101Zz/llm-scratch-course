@@ -274,3 +274,35 @@ The framework adds ~3–4 months on top of Phases 0–7. Total course time becom
 **What this does NOT change.** The north star, checkpoint goals (a)–(d), R0a/R0b/R1 as designed, Claims 5–23, the weekly paper track, `CONVENTIONS.md`, `REVIEW.md`, the `MENTOR.md` Hard Rules, and `frontier-lab.md` all stand. The Python `phase0/` tree stays untouched as trail. `/Volumes/Mrigesh SSD/llm-scratch/` is the pre-restructure clone and is marked stale, not deleted.
 
 **Revisit when.** At the end of P1. If a 3-way parity table took more than 1 week with the theory already banked, then P2's box is wrong too, and the PyTorch block needs rescoping before Claim 5.
+
+---
+
+## D-0011 · 2026-08-11 · One self-contained lesson file per day (`course/days/DAY_NN.md`)
+
+**Decision.**
+1. **Each day of the Rust track gets one lesson file**, `course/days/DAY_NN.md`, written at the session start of that day. `DAY_01.md` and `DAY_02.md` exist now. Nothing past the current gate gets written in advance.
+2. **The lesson replaces the reading.** It teaches every concept the day needs in the mentor's own words. The *Programming Rust* page numbers stay as an optional cross-reference, never as a required stop.
+3. **Three files, three jobs, no overlap.** `RUST_PHASE_0_1.md` is the design and the spec. `days/DAY_NN.md` is the teaching. `RUST_TRACKER.md` is the checklist and **the only file with checkboxes**.
+4. **The generation rule is recorded in `CLAUDE.md`** (section *Day lessons*) and in the new `AGENTS.md`, so a later session in any harness generates `DAY_03.md` under the same constraints.
+5. **`AGENTS.md` is added** beside `CLAUDE.md` — a thin pointer carrying the four rules that break the project. It sits outside the git repo, with `CLAUDE.md`.
+
+**Why.** The day cards are a spec, not a lesson. Working Day 1 from the card meant holding three sources open at once: the card, an 800-page PDF at four different page ranges, and the tracker. The cost is context switching at exactly the moment when the work needs depth. A single file per day removes it. This is the same reasoning that produced `RUST_TRACKER.md` — the card was correct and unusable as a daily driver.
+
+**Why one day at a time.** A lesson written three days early is written against an API that has not survived its argument yet. Day 1 already produced two open design points (the seed-0 policy, and where the Box-Muller `cos` lives). A pre-written Day 4 would quietly assume answers to both. The rule matches "plan one claim at a time" in `RUST_TRACKER.md`.
+
+**The constraint that makes lessons safe.** A lesson file is the easiest place to break the "never write core learning code" rule, because teaching depth and handing over a solution look similar on the page. So the rule is explicit: no function bodies, no self-check answers, and every worked example on **unrelated data** — shapes, money, city names, never the tensor code. The `Cents` and `Bookshelf` examples in Days 1 and 2 are the pattern.
+
+**Copyright.** The repo is public on GitHub. Book pages are taught, never pasted. Recorded because "inline all the reading material" reads as an instruction to copy, and it is not.
+
+**Honest risks recorded at decision time.**
+- **Lesson writing costs mentor time at each session start.** If it starts eating the build session, cut the lesson to sections 1, 4, 6 and 8, and keep the depth for the days that need it. Days 9 and 16 need it most.
+- **Three files can still drift.** The mitigation is structural, not procedural: only the tracker holds state, and the lesson links back to the card rather than restating it.
+
+**Considered, rejected: meta-work.**
+- A script that generates `DAY_NN.md` skeletons from the day cards — considered, rejected: meta-work. There are 25 days, and the value is in the prose, not the skeleton.
+- Merging the day cards into the lesson files and deleting `RUST_PHASE_0_1.md` — considered, rejected. The card file is the architecture document and it is read end to end when a design question comes up.
+- Adding lesson files to the Python `phase0/` tree — considered, rejected: that tree is trail, and it is superseded.
+
+**What this does NOT change.** The claim ladder, the R0a acceptance test, the timebox, the teaching protocol in `RUST_PHASE_0_1.md` section 8, and the `std`-only constraint all stand.
+
+**Revisit when.** At Gate R0a. If the lesson files went unread, or if they duplicated the tracker in practice, stop writing them and say so here.

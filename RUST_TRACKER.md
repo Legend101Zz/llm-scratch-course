@@ -1,8 +1,9 @@
 # RUST_TRACKER.md — the day checklist for R0a
 
 > Written in [Simple English](.claude/skills/simple-english/SKILL.md) (ASD-STE100).
-> This file is the **checklist**. [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) is the **explanation**.
-> Open both. Tick the boxes here. Read the concept there.
+> This file is the **checklist**. [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) is the **design**.
+> [`days/DAY_NN.md`](days/) is the **lesson** — one self-contained file per day, with the reading built in.
+> Tick the boxes here. Read the lesson there. The mentor writes the next lesson at the start of that day.
 
 **Active claim: R0a.** I can write a strided, broadcast tensor library in Rust with a cache-blocked multithreaded matmul. I can prove it correct with no reference implementation.
 
@@ -64,7 +65,7 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 1 — The `Scalar` trait and a PRNG you own · 2.5 h
 
-[Day card](RUST_PHASE_0_1.md#day-1--the-scalar-trait-and-a-prng-you-own)
+📖 **[Full lesson — days/DAY_01.md](days/DAY_01.md)** · [Day card](RUST_PHASE_0_1.md#day-1--the-scalar-trait-and-a-prng-you-own)
 
 - [ ] **Read (25 min).** _Programming Rust_ pp. 235–252. Skim only.
 - [ ] Create `src/scalar.rs` and `src/rng.rs`. Declare both in `src/lib.rs`.
@@ -95,7 +96,7 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 2 — Storage, shape, strides · 2.5 h
 
-[Day card](RUST_PHASE_0_1.md#day-2--storage-shape-strides)
+📖 **[Full lesson — days/DAY_02.md](days/DAY_02.md)** · [Day card](RUST_PHASE_0_1.md#day-2--storage-shape-strides)
 
 - [ ] **Read (20 min).** _Programming Rust_ pp. 57–63 and pp. 90–92.
 - [ ] Create `src/tensor.rs`.
