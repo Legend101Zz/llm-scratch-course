@@ -6,7 +6,7 @@
 > The short card is [`RUST_PHASE_0_1.md` Day 2](../RUST_PHASE_0_1.md#day-2--storage-shape-strides).
 
 **Time: 2.5 hours. Claim: R0a. File you create: `src/tensor.rs`.**
-**Ask me for `tests/day2.rs` at the start of the session. I write the red before you write the code.**
+**Your tests are already written and red: `rust/tests/day2.rs`.**
 
 ---
 
@@ -300,23 +300,37 @@ Two design points to decide, and to write down in the commit message:
 
 ---
 
-## 5. The tests
+## 5. The tests, and the trap in each one
 
-Ask me for `tests/day2.rs` at the start of the session. The day card fixes the four names in advance:
+`rust/tests/day2.rs` is written and committed. Do not edit the assertions. Argue with me instead if one is wrong.
 
 | Test | What it traps |
 |---|---|
-| `strides_row_major` | The stride rule from section 2.1, on `[2,3,4]`. |
-| `phys_index_matches_manual` | The index formula from section 2.2. |
+| `strides_row_major` | The stride rule from section 2.1. It runs at rank 1, 2, 3 and 4, so a rule written for rank 3 and stopped there fails. It also covers a zero shape entry. |
+| `phys_index_matches_manual` | The index formula from section 2.2. It checks **every** element of a `[2,3,4]` tensor, so two axes swapped cannot hide. |
 | `from_vec_rejects_bad_len` | A silent size mismatch. It uses `#[should_panic]`. |
-| `numel_is_shape_product` | The empty-product and zero-entry cases. |
+| `numel_is_shape_product` | The empty-product and zero-entry cases, and a `zeros` that never filled its buffer. |
+
+### 5.1 How the test reaches a private function
+
+`phys_index` is private, and `tests/day2.rs` is an **integration test**. An integration test is a separate crate, so it sees the public API only. It cannot call `phys_index`, and it must not.
+
+The test reaches the function through `get`, with one trick: the buffer holds `data[i] == i`. So `get` returns the buffer position that it read, and the index formula is visible in the output.
+
+Keep `phys_index` private. A test that needs a private function is a test that guessed the wrong seam.
+
+Run one test while you work:
+
+```bash
+cargo test --test day2 phys_index_matches_manual
+```
 
 ---
 
 ## 6. Order of work
 
 1. Create `src/tensor.rs`. Add `pub mod tensor;` to `src/lib.rs`.
-2. Ask me for `tests/day2.rs`. Run it. Watch it fail.
+2. Run `cargo test --test day2`. Watch it fail to compile. That failure is the red, and the compiler tells you what to build.
 3. Write `contiguous_strides`. Make `strides_row_major` pass.
 4. Write the struct, `zeros` and `from_vec`. Make `from_vec_rejects_bad_len` pass.
 5. Write `shape`, `numel` and `is_contiguous`. Make `numel_is_shape_product` pass.

@@ -3,7 +3,9 @@
 > Written in [Simple English](.claude/skills/simple-english/SKILL.md) (ASD-STE100).
 > This file is the **checklist**. [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) is the **design**.
 > [`days/DAY_NN.md`](days/) is the **lesson** — one self-contained file per day, with the reading built in.
-> Tick the boxes here. Read the lesson there. The mentor writes the next lesson at the start of that day.
+> Tick the boxes here. Read the lesson there.
+> **Lessons and tests for Days 1 to 7 are written.** Days 8 and later come one at a time.
+> [`days/AUTHORING.md`](days/AUTHORING.md) is how the mentor writes them, and what is still open in the ones written ahead.
 
 **Active claim: R0a.** I can write a strided, broadcast tensor library in Rust with a cache-blocked multithreaded matmul. I can prove it correct with no reference implementation.
 
@@ -49,7 +51,7 @@ This block applies to every day below. It is here once, not six times.
 1. [ ] Open `PROGRESS.md` and this file. Claude states the active claim and the days left.
 2. [ ] Claude quizzes you cold on the due `REVIEW.md` items and the concept of the prior day.
 3. [ ] Read the prereq pages **before** you write code. The pages are on the day card.
-4. [ ] Ask Claude for the failing test file. **Claude writes the tests. You write the code.**
+4. [ ] Move `rust/tests/pending/dayN.rs` to `rust/tests/dayN.rs`. **Claude writes the tests. You write the code.**
 5. [ ] Run the tests. Watch them fail. A test that never failed proves nothing.
 6. [ ] Write the code. Make the tests pass.
 7. [ ] Do the self-check on paper. Photograph the paper into `hand_math/`.
@@ -127,7 +129,10 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 3 — Zero-copy views · 3 h
 
-[Day card](RUST_PHASE_0_1.md#day-3--zero-copy-views-reshape-permute-transpose-slice)
+📖 **[Full lesson — days/DAY_03.md](days/DAY_03.md)** · [Day card](RUST_PHASE_0_1.md#day-3--zero-copy-views-reshape-permute-transpose-slice)
+
+- [ ] Move `tests/pending/day3.rs` to `tests/day3.rs`. Run it. Watch it fail.
+- [ ] Write `strides()` and `shares_storage_with()`. The lesson section 4.1 says why.
 
 - [ ] **Read (20 min).** _Programming Rust_ pp. 148–158.
 - [ ] Write the `ShapeError` enum with its four variants.
@@ -159,7 +164,9 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 4 — Broadcast and elementwise ops · 3 h
 
-[Day card](RUST_PHASE_0_1.md#day-4--broadcast-and-elementwise-ops)
+📖 **[Full lesson — days/DAY_04.md](days/DAY_04.md)** · [Day card](RUST_PHASE_0_1.md#day-4--broadcast-and-elementwise-ops)
+
+- [ ] Move `tests/pending/day4.rs` to `tests/day4.rs`. Run it. Watch it fail.
 
 - [ ] **Read (25 min).** _Programming Rust_ pp. 303–312 and pp. 330–344.
 - [ ] Write `broadcast_shapes`. Align the shapes from the trailing axis.
@@ -189,7 +196,9 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 5 — Reductions · 3 h
 
-[Day card](RUST_PHASE_0_1.md#day-5--reductions)
+📖 **[Full lesson — days/DAY_05.md](days/DAY_05.md)** · [Day card](RUST_PHASE_0_1.md#day-5--reductions)
+
+- [ ] Move `tests/pending/day5.rs` to `tests/day5.rs`. Run it. Watch it fail.
 
 - [ ] **Read (20 min).** _Programming Rust_ pp. 345–354.
 - [ ] Write `sum_axis` with `keepdim`.
@@ -217,7 +226,9 @@ This block applies to every day below. It is here once, not six times.
 
 ## ☐ Day 6 — The naive matmul, and the oracle discipline · 3 h
 
-[Day card](RUST_PHASE_0_1.md#day-6--the-naive-matmul-and-the-oracle-discipline)
+📖 **[Full lesson — days/DAY_06.md](days/DAY_06.md)** · [Day card](RUST_PHASE_0_1.md#day-6--the-naive-matmul-and-the-oracle-discipline)
+
+- [ ] Move `tests/pending/day6.rs` to `tests/day6.rs`. Run it. Watch it fail.
 
 Today you write the slowest correct matmul. **You keep it for the whole project.** It is the oracle for every faster version.
 
@@ -261,7 +272,9 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 
 ## ☐ Day 7 — Blocked matmul, and the measured gap · 5 h across **2 days**
 
-[Day card](RUST_PHASE_0_1.md#day-7--blocked-matmul-and-the-measured-gap--2-day-card)
+📖 **[Full lesson — days/DAY_07.md](days/DAY_07.md)** · [Day card](RUST_PHASE_0_1.md#day-7--blocked-matmul-and-the-measured-gap--2-day-card)
+
+- [ ] Move `tests/pending/day7.rs` to `tests/day7.rs`. Run it. Watch it fail.
 
 **Predict before you measure.** Write the predicted best block size on paper first. The prediction is part of the exit artifact.
 
