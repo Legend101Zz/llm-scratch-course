@@ -1,5 +1,4 @@
 use crate::scalar::Scalar;
-use std::ops::Range;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -26,6 +25,13 @@ impl std::fmt::Display for ShapeError {
 }
 
 impl std::error::Error for ShapeError {}
+
+/// A multi-dimensional array of `T`, parameterised over a scalar type.
+///
+/// Every tensor is a view onto a shared `Rc<Vec<T>>` plus four pieces of
+/// metadata: `shape`, `strides`, `offset`, and the implicit rule
+/// `flat_index = offset + Σ idx[i] * strides[i]`. Transpose, slice, broadcast
+/// and permute all just change the metadata; the buffer doesn't move.
 #[derive(Clone)]
 pub struct Tensor<T: Scalar> {
     data: Rc<Vec<T>>, // shared, immutable. Views alias it.
@@ -35,6 +41,10 @@ pub struct Tensor<T: Scalar> {
 }
 
 impl<T: Scalar> Tensor<T> {
+    /// Allocate a fresh tensor of the given shape, filled with `T::ZERO`.
+    ///
+    /// Use this when you need an output buffer, a gradient accumulator, or a
+    /// mask. The buffer is owned outright (refcount = 1).
     pub fn zeros(shape: &[usize]) -> Self {
         let strides = contiguous_strides(shape);
         let offset = 0;
@@ -47,6 +57,12 @@ impl<T: Scalar> Tensor<T> {
             offset,
         }
     }
+
+    /// Wrap an existing flat `Vec` as a tensor with the given shape.
+    ///
+    /// The buffer is consumed (taken by value) and shared via `Rc`. The Vec
+    /// must already be in row-major order. Panics if its length doesn't match
+    /// the product of the shape dims — that's a bug, not a recoverable error.
     pub fn from_vec(data: Vec<T>, shape: &[usize]) -> Self {
         assert!(
             data.len() == shape.iter().product(),
@@ -65,21 +81,37 @@ impl<T: Scalar> Tensor<T> {
         }
     }
 
+    /// The shape: how many entries each axis has. Borrowed, not copied.
     pub fn shape(&self) -> &[usize] {
         &self.shape
     }
 
+    /// The strides: how many buffer slots to skip per unit step on each axis.
+    /// Borrowed, not copied.
     pub fn strides(&self) -> &[usize] {
         &self.strides
     }
 
+    /// True iff both tensors point at the same underlying buffer allocation.
+    ///
+    /// A transpose, slice or broadcast of `self` shares storage with `self`.
+    /// A `contiguous()` copy, or any operation that builds a fresh buffer,
+    /// does not.
     pub fn shares_storage_with(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.data, &other.data)
     }
 
+    /// Total number of elements: the product of the shape dims.
+    ///
+    /// For a broadcast view, this can be larger than the buffer length. That's
+    /// the point of broadcasting — many logical entries, one physical one.
     pub fn numel(&self) -> usize {
         self.shape.iter().product()
     }
+
+    /// True iff the strides match the default row-major layout and the offset
+    /// is zero. A contiguous tensor can be reshaped without copying; a
+    /// non-contiguous one cannot.
     pub fn is_contiguous(&self) -> bool {
         self.strides == contiguous_strides(&self.shape)
     }
@@ -111,11 +143,26 @@ impl<T: Scalar> Tensor<T> {
                 .sum::<usize>()
     }
 
+    /// Read one element at the given multi-dim index.
+    ///
+    /// This is the canonical way to peek into a tensor. Goes through
+    /// `phys_index`, so it honours the strides and offset — works correctly
+    /// even on transposed, sliced, or broadcast views.
     pub fn get(&self, idx: &[usize]) -> T {
         let index = self.phys_index(idx);
         self.data[index]
     }
 
+    /// Reorder the axes according to `order`. `order[i]` names the **source**
+    /// axis that becomes the new axis `i`.
+    ///
+    /// Pure metadata: the buffer is shared, the offset is unchanged. Returns
+    /// `Err(BadRank)` if `order.len()` doesn't match the rank, or
+    /// `Err(InvalidPermutation)` if any axis index is out of range or
+    /// repeated.
+    ///
+    /// This is the general "permute" used by multi-head attention. The
+    /// `transpose(a, b)` method below is a special case.
     pub fn permute(&self, order: &[usize]) -> Result<Self, ShapeError> {
         let rank = self.shape.len();
         if order.len() != rank {
@@ -147,6 +194,11 @@ impl<T: Scalar> Tensor<T> {
         })
     }
 
+    /// Swap two specific axes. Cheap view, no copy.
+    ///
+    /// For a 2D tensor, `transpose(0, 1)` is the matrix transpose. For higher
+    /// ranks it swaps any two axes — the method of choice when you need to
+    /// move a dimension from the middle to the front.
     pub fn transpose(&self, a: usize, b: usize) -> Result<Self, ShapeError> {
         let rank = self.shape.len();
         if a >= rank || b >= rank {
@@ -157,6 +209,14 @@ impl<T: Scalar> Tensor<T> {
         self.permute(&perm)
     }
 
+    /// Change the shape, keeping the same elements in row-major order.
+    ///
+    /// On a contiguous tensor this is a free metadata change. On a
+    /// non-contiguous tensor it refuses — call `contiguous()` first to
+    /// materialise a copy, then reshape the copy.
+    ///
+    /// Returns `Err(SizeMismatch)` if the new shape has a different number
+    /// of elements, or `Err(NotContiguous)` if the source isn't contiguous.
     pub fn reshape(&self, shape: &[usize]) -> Result<Self, ShapeError> {
         let new_numel: usize = shape.iter().product();
         let cur_numel = self.numel();
@@ -177,6 +237,14 @@ impl<T: Scalar> Tensor<T> {
         })
     }
 
+    /// Narrow one axis to a range `[start..end)`. Pure metadata: the buffer is
+    /// shared and the strides are untouched.
+    ///
+    /// The result has `shape[axis] = end - start` and `offset` shifted by
+    /// `start * strides[axis]`. `start == end` is legal and yields an empty
+    /// view (numel = 0).
+    ///
+    /// For multi-axis slicing, chain calls: `t.slice(0, 1, 3)?.slice(2, 0, 4)?`.
     pub fn slice(&self, axis: usize, start: usize, end: usize) -> Result<Self, ShapeError> {
         let rank = self.shape.len();
 
@@ -204,6 +272,16 @@ impl<T: Scalar> Tensor<T> {
         })
     }
 
+    /// Materialise the tensor into a fresh row-major buffer.
+    ///
+    /// Fast path: if the tensor is already contiguous with offset zero,
+    /// returns a clone (no copy). Slow path: walks every logical position,
+    /// reads through the strides/offset, and packs the values into a new
+    /// buffer.
+    ///
+    /// This is the only method in the library that copies. Reach for it
+    /// when you want to mutate, or when an operation refuses a non-contiguous
+    /// input.
     pub fn contiguous(&self) -> Self {
         // Fast path: already contiguous, no copy.
         if self.is_contiguous() && self.offset == 0 {
@@ -228,6 +306,13 @@ impl<T: Scalar> Tensor<T> {
         }
     }
 
+    /// Walk the tensor in logical row-major order and dump the values into a
+    /// flat `Vec<T>`.
+    ///
+    /// For a contiguous tensor this matches the buffer order. For a transposed
+    /// or sliced view it reflects the *logical* layout — the output reads as
+    /// if the view were a fresh contiguous buffer. For a broadcast view, the
+    /// output has `numel()` entries with the broadcast repeats resolved.
     pub fn to_vec(&self) -> Vec<T> {
         let mut output: Vec<T> = Vec::with_capacity(self.numel());
         for i in 0..self.numel() {
@@ -236,8 +321,173 @@ impl<T: Scalar> Tensor<T> {
         }
         output
     }
+
+    /// Reshape the view to a target shape by stretching axes of size 1.
+    ///
+    /// The trick: stretched axes get stride 0, so every index along them
+    /// reads the same buffer position. That's the entire mechanism of
+    /// broadcasting — no data ever moves.
+    ///
+    /// Rules: target rank must be ≥ self rank, and every existing axis must
+    /// either match the target or be stretched from 1. Anything else returns
+    /// `Err(SizeMismatch)`.
+    ///
+    /// The result may have `numel()` greater than the buffer length —
+    /// multiple logical positions reading the same physical slot.
+    pub fn broadcast_to(&self, shape: &[usize]) -> Result<Self, ShapeError> {
+        let self_rank = self.shape.len();
+        let target_rank = shape.len();
+
+        // Broadcast never lowers the rank.
+        if target_rank < self_rank {
+            return Err(ShapeError::SizeMismatch);
+        }
+
+        let pad = target_rank - self_rank;
+        let mut new_shape = Vec::with_capacity(target_rank);
+        let mut new_strides = Vec::with_capacity(target_rank);
+
+        for (i, &target_dim) in shape.iter().enumerate() {
+            if i < pad {
+                // New leading axis: take the target's shape, force stride 0.
+                new_shape.push(target_dim);
+                new_strides.push(0);
+            } else {
+                let self_idx = i - pad;
+                let self_dim = self.shape[self_idx];
+                let self_stride = self.strides[self_idx];
+
+                if self_dim == target_dim {
+                    new_shape.push(target_dim);
+                    new_strides.push(self_stride);
+                } else if self_dim == 1 {
+                    // Stretch: keep the target's shape, zero the stride.
+                    new_shape.push(target_dim);
+                    new_strides.push(0);
+                } else {
+                    return Err(ShapeError::SizeMismatch);
+                }
+            }
+        }
+
+        Ok(Self {
+            data: self.data.clone(),
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
+        })
+    }
+
+    /// Apply a closure to every element. Returns a fresh, contiguous, offset-0
+    /// tensor.
+    ///
+    /// The closure is called once per logical element, including the repeats
+    /// in a broadcast view — those become real, distinct entries in the new
+    /// buffer. The closure must be `Fn` (not `FnOnce`), because it's called
+    /// many times.
+    pub fn map(&self, f: impl Fn(T) -> T) -> Self {
+        let numel = self.numel();
+        let mut new_buffer = Vec::with_capacity(numel);
+
+        for linear in 0..numel {
+            let idx = unravel_index(linear, &self.shape);
+            new_buffer.push(f(self.get(&idx)));
+        }
+
+        Self {
+            data: Rc::new(new_buffer),
+            shape: self.shape.clone(),
+            strides: contiguous_strides(&self.shape),
+            offset: 0,
+        }
+    }
+
+    /// Apply a closure pairwise. Both operands are broadcast to their common
+    /// shape before the closure runs.
+    ///
+    /// Every two-operand op (`add`, `sub`, `mul`, `div`) is a one-line call
+    /// to `zip_with`. The broadcasting happens once, here; the closure sees
+    /// only matching logical positions.
+    ///
+    /// Returns `Err(SizeMismatch)` if the two shapes cannot be broadcast.
+    pub fn zip_with(&self, other: &Self, f: impl Fn(T, T) -> T) -> Result<Self, ShapeError> {
+        let common_shape = broadcast_shapes(&self.shape, &other.shape)?;
+
+        let a_broad = self.broadcast_to(&common_shape)?;
+        let b_broad = other.broadcast_to(&common_shape)?;
+
+        let numel: usize = common_shape.iter().product();
+        let mut new_buffer = Vec::with_capacity(numel);
+
+        for linear in 0..numel {
+            let idx = unravel_index(linear, &common_shape);
+            new_buffer.push(f(a_broad.get(&idx), b_broad.get(&idx)));
+        }
+
+        Ok(Self {
+            data: Rc::new(new_buffer),
+            shape: common_shape.clone(),
+            strides: contiguous_strides(&common_shape),
+            offset: 0,
+        })
+    }
+
+    /// Elementwise addition. Both operands are broadcast to a common shape.
+    /// Returns `Err(SizeMismatch)` if the shapes don't broadcast.
+    pub fn add(&self, other: &Self) -> Result<Self, ShapeError> {
+        self.zip_with(other, |a, b| a + b)
+    }
+
+    /// Elementwise subtraction. Both operands are broadcast to a common shape.
+    pub fn sub(&self, other: &Self) -> Result<Self, ShapeError> {
+        self.zip_with(other, |a, b| a - b)
+    }
+
+    /// Elementwise multiplication. Both operands are broadcast to a common shape.
+    pub fn mul(&self, other: &Self) -> Result<Self, ShapeError> {
+        self.zip_with(other, |a, b| a * b)
+    }
+
+    /// Elementwise division. Both operands are broadcast to a common shape.
+    pub fn div(&self, other: &Self) -> Result<Self, ShapeError> {
+        self.zip_with(other, |a, b| a / b)
+    }
+
+    /// Negate every element. Single operand → no shape can fail.
+    pub fn neg(&self) -> Self {
+        self.map(|x| -x)
+    }
+
+    /// Elementwise `exp(x)`. Single operand → no shape can fail.
+    pub fn exp(&self) -> Self {
+        self.map(|x| x.exp())
+    }
+
+    /// Elementwise natural log. Single operand → no shape can fail.
+    pub fn ln(&self) -> Self {
+        self.map(|x| x.ln())
+    }
+
+    /// Elementwise square root. Single operand → no shape can fail.
+    pub fn sqrt(&self) -> Self {
+        self.map(|x| x.sqrt())
+    }
+
+    /// Elementwise hyperbolic tangent. Single operand → no shape can fail.
+    pub fn tanh(&self) -> Self {
+        self.map(|x| x.tanh())
+    }
+
+    /// ReLU: `max(x, 0)` per element. Single operand → no shape can fail.
+    pub fn relu(&self) -> Self {
+        self.map(|x| x.max(T::ZERO))
+    }
 }
 
+/// Convert a flat linear index into a multi-dim index for the given shape.
+///
+/// Mixed-radix counting from the innermost axis outward. The inverse of
+/// `offset + Σ idx[i] * strides[i]` for a contiguous, offset-0 tensor.
 pub fn unravel_index(mut flat: usize, shape: &[usize]) -> Vec<usize> {
     let mut idx = vec![0; shape.len()];
 
@@ -249,6 +499,10 @@ pub fn unravel_index(mut flat: usize, shape: &[usize]) -> Vec<usize> {
     idx
 }
 
+/// Compute the row-major contiguous strides for a given shape.
+///
+/// `strides[n-1] = 1`, `strides[i] = prod(shape[i+1..])`. The innermost axis
+/// varies fastest in memory; the outermost varies slowest.
 pub fn contiguous_strides(shape: &[usize]) -> Vec<usize> // row-major
 {
     let mut strides = vec![0; shape.len()];
@@ -259,4 +513,38 @@ pub fn contiguous_strides(shape: &[usize]) -> Vec<usize> // row-major
         stride *= shape[i];
     }
     strides
+}
+
+pub fn broadcast_shapes(a: &[usize], b: &[usize]) -> Result<Vec<usize>, ShapeError> {
+    let mut result = Vec::new();
+    let mut ai = a.iter().rev();
+    let mut bi = b.iter().rev();
+
+    loop {
+        match (ai.next(), bi.next()) {
+            (Some(&da), Some(&db)) => {
+                if da == db {
+                    result.push(da);
+                } else if da == 1 {
+                    result.push(db);
+                } else if db == 1 {
+                    result.push(da);
+                } else {
+                    return Err(ShapeError::SizeMismatch);
+                }
+            }
+            (Some(&da), None) => {
+                // a has an axis, b doesn't: b is implicitly 1. Pair is (da, 1) — always compatible.
+                result.push(da);
+            }
+            (None, Some(&db)) => {
+                // b has an axis, a doesn't: a is implicitly 1. Pair is (1, db) — always compatible.
+                result.push(db);
+            }
+            (None, None) => break,
+        }
+    }
+
+    result.reverse();
+    Ok(result)
 }
