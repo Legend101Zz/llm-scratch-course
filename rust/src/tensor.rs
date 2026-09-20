@@ -482,6 +482,175 @@ impl<T: Scalar> Tensor<T> {
     pub fn relu(&self) -> Self {
         self.map(|x| x.max(T::ZERO))
     }
+
+    /// Reduce the tensor along one axis by summing.
+    ///
+    /// `keepdim = false` removes the axis from the shape; `keepdim = true`
+    /// leaves it as a size-1 axis so the result broadcasts back against the
+    /// input — that's the whole reason `keepdim` exists.
+    ///
+    /// Each group is folded left-to-right. Groups are typically bounded by
+    /// one axis (often <10k), so the precision loss is at most a few ULPs —
+    /// acceptable. `sum_all` is the one place that needs pairwise.
+    ///
+    /// Returns `Err(OutOfBounds)` if `axis` is past the rank.
+    pub fn sum_axis(&self, axis: usize, keepdim: bool) -> Result<Self, ShapeError> {
+        let rank = self.shape.len();
+        if axis >= rank {
+            return Err(ShapeError::OutOfBounds);
+        }
+
+        let out_shape: Vec<usize> = self
+            .shape
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &dim)| {
+                if i == axis {
+                    if keepdim {
+                        Some(1)
+                    } else {
+                        None
+                    }
+                } else {
+                    Some(dim)
+                }
+            })
+            .collect();
+
+        let reduced_dim = self.shape[axis];
+        let out_numel: usize = out_shape.iter().product();
+        let mut buffer = Vec::with_capacity(out_numel);
+
+        for linear in 0..out_numel {
+            let out_idx = unravel_index(linear, &out_shape);
+            let mut acc = T::ZERO;
+            for j in 0..reduced_dim {
+                let mut in_idx = out_idx.clone();
+                if keepdim {
+                    // Output already has the slot at position `axis`.
+                    in_idx[axis] = j;
+                } else {
+                    // Output is rank - 1; insert the reduced slot.
+                    in_idx.insert(axis, j);
+                }
+                acc = acc + self.get(&in_idx);
+            }
+            buffer.push(acc);
+        }
+
+        let out_strides = contiguous_strides(&out_shape);
+
+        Ok(Self {
+            data: Rc::new(buffer),
+            shape: out_shape,
+            strides: out_strides,
+            offset: 0,
+        })
+    }
+
+    /// Reduce along one axis by averaging.
+    ///
+    /// Same shape rule as `sum_axis`. Equivalent to `sum_axis` followed by
+    /// dividing every output element by the size of the reduced axis.
+    ///
+    /// An empty axis (size 0) returns NaN: 0/0 on a float. That is the
+    /// honest answer — there is no mean of nothing.
+    pub fn mean_axis(&self, axis: usize, keepdim: bool) -> Result<Self, ShapeError> {
+        let sum = self.sum_axis(axis, keepdim)?;
+        let n = T::from_f64(self.shape[axis] as f64);
+        Ok(sum.map(|x| x / n))
+    }
+
+    /// Reduce along one axis by taking the max.
+    ///
+    /// Seeded with the first element of each group, never with zero — that
+    /// way an all-negative axis returns the right answer. NaN handling comes
+    /// from `Scalar::max`, which returns the non-NaN operand.
+    pub fn max_axis(&self, axis: usize, keepdim: bool) -> Result<Self, ShapeError> {
+        let rank = self.shape.len();
+        if axis >= rank {
+            return Err(ShapeError::OutOfBounds);
+        }
+
+        let out_shape: Vec<usize> = self
+            .shape
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &dim)| {
+                if i == axis {
+                    if keepdim {
+                        Some(1)
+                    } else {
+                        None
+                    }
+                } else {
+                    Some(dim)
+                }
+            })
+            .collect();
+
+        let reduced_dim = self.shape[axis];
+        let out_numel: usize = out_shape.iter().product();
+        let mut buffer = Vec::with_capacity(out_numel);
+
+        for linear in 0..out_numel {
+            let out_idx = unravel_index(linear, &out_shape);
+
+            // Seed with the first element of this group.
+            let mut first_in_idx = out_idx.clone();
+            if keepdim {
+                first_in_idx[axis] = 0;
+            } else {
+                first_in_idx.insert(axis, 0);
+            }
+            let mut m = self.get(&first_in_idx);
+
+            for j in 1..reduced_dim {
+                let mut in_idx = out_idx.clone();
+                if keepdim {
+                    in_idx[axis] = j;
+                } else {
+                    in_idx.insert(axis, j);
+                }
+                m = m.max(self.get(&in_idx));
+            }
+            buffer.push(m);
+        }
+
+        let out_strides = contiguous_strides(&out_shape);
+
+        Ok(Self {
+            data: Rc::new(buffer),
+            shape: out_shape,
+            strides: out_strides,
+            offset: 0,
+        })
+    }
+
+    /// Sum every element of the tensor into a single scalar.
+    ///
+    /// Implemented as pairwise summation with a base-case block of 64. A
+    /// plain left fold in `f32` stops dead at 2^24, so a naive sum over a
+    /// million parameters is wrong by a factor of six. Pairwise keeps every
+    /// addition between values of similar size and survives.
+    pub fn sum_all(&self) -> T {
+        const BASE: usize = 64;
+
+        fn pairwise<T: Scalar>(values: &[T]) -> T {
+            if values.len() <= BASE {
+                let mut acc = T::ZERO;
+                for &v in values {
+                    acc = acc + v;
+                }
+                acc
+            } else {
+                let mid = values.len() / 2;
+                pairwise(&values[..mid]) + pairwise(&values[mid..])
+            }
+        }
+
+        pairwise(&self.to_vec())
+    }
 }
 
 /// Convert a flat linear index into a multi-dim index for the given shape.

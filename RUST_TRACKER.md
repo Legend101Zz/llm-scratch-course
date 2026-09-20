@@ -1,10 +1,10 @@
-# RUST_TRACKER.md — the day checklist for R0a
+# RUST_TRACKER.md — the day checklist for R0a and R0b
 
 > Written in [Simple English](.claude/skills/simple-english/SKILL.md) (ASD-STE100).
 > This file is the **checklist**. [`RUST_PHASE_0_1.md`](RUST_PHASE_0_1.md) is the **design**.
 > [`days/DAY_NN.md`](days/) is the **lesson** — one self-contained file per day, with the reading built in.
 > Tick the boxes here. Read the lesson there.
-> **Lessons and tests for Days 1 to 7 are written.** Days 8 and later come one at a time.
+> **Lessons and tests for Days 1 to 14 are written.** Days 8 to 14 were written ahead on 4 September 2026, at my explicit request. Day 15 and later come one at a time.
 > [`days/AUTHORING.md`](days/AUTHORING.md) is how the mentor writes them, and what is still open in the ones written ahead.
 
 **Active claim: R0a.** I can write a strided, broadcast tensor library in Rust with a cache-blocked multithreaded matmul. I can prove it correct with no reference implementation.
@@ -13,12 +13,13 @@
 
 **Timebox start date: `11th August 2026`** .
 
-| Week       | Days | What lands                                                                  |
-| ---------- | ---- | --------------------------------------------------------------------------- |
-| **Week 1** | 1–6  | Trait, PRNG, strides, views, broadcast, reductions, the naive matmul oracle |
-| **Week 2** | 7–8  | Blocked matmul, scoped threads, the GFLOP/s table, the gate                 |
+| Week       | Days | Claim | What lands                                                                  |
+| ---------- | ---- | ----- | --------------------------------------------------------------------------- |
+| **Week 1** | 1–6  | R0a   | Trait, PRNG, strides, views, broadcast, reductions, the naive matmul oracle |
+| **Week 2** | 7–8  | R0a   | Blocked matmul, scoped threads, the GFLOP/s table, **Gate R0a**             |
+| **Week 3** | 9–14 | R0b   | The tape, backward, the gradient checker, cross-entropy, AdamW, **Gate R0b** |
 
-This file covers **R0a only**. R0b (Days 9–14) gets its own section after you pass Gate R0a. Plan one claim at a time.
+This file covers **R0a and R0b**. R0b starts below Gate R0a. Do not open it before that gate is closed.
 
 ---
 
@@ -305,9 +306,12 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 
 ## ☐ Day 8 — Parallelism with scoped threads · 2.5 h
 
-[Day card](RUST_PHASE_0_1.md#day-8--parallelism-with-scoped-threads)
+📖 **[Full lesson — days/DAY_08.md](days/DAY_08.md)** · [Day card](RUST_PHASE_0_1.md#day-8--parallelism-with-scoped-threads)
+
+- [ ] Move `tests/pending/day8.rs` to `tests/day8.rs`. Run it. Watch it fail.
 
 - [ ] **Read (30 min).** _Programming Rust_ pp. 457–466. Read the Rayon section to learn what you leave out.
+- [ ] Decide the `Rc` question. `Rc` is not `Send`, so `&Tensor<T>` cannot enter a thread. Lesson section 4.2 gives the two fixes. Record the choice in the commit message.
 - [ ] Write `matmul_parallel`. Partition the output **by rows**.
 - [ ] Use `std::thread::scope`. Use no `Arc` and no `Mutex`.
 - [ ] Predict the speedup at 10 threads against 4 threads. Write the number down.
@@ -337,7 +341,230 @@ Today you write the slowest correct matmul. **You keep it for the whole project.
 - [ ] The GFLOP/s table is committed. It states percent of peak, and predicted against measured block size.
 - [ ] The R0a LinkedIn post is shipped.
 
-**A claim without its artifact is not done.** When all four boxes are ticked, mark R0a ✅ in `PROGRESS.md`. Then this file gets its R0b section.
+**A claim without its artifact is not done.** When all four boxes are ticked, mark R0a ✅ in `PROGRESS.md`. Then open the R0b section below.
+
+---
+
+# WEEK 3 — R0b · Days 9 to 14, then the gate
+
+**Active claim after Gate R0a: R0b.** I can build a reverse-mode autograd in Rust and prove every gradient correct against an independent numerical oracle.
+
+**Timebox: 1.5 weeks. 7 working days. Day 9 takes 2 days.**
+
+> Do not open this section until all four Gate R0a boxes above are ticked.
+
+---
+
+## ☐ Day 9 — The tape: autograd architecture · 5 h across **2 days**
+
+📖 **[Full lesson — days/DAY_09.md](days/DAY_09.md)** · [Day card](RUST_PHASE_0_1.md#day-9--the-tape-autograd-architecture--2-day-card-the-hardest-one)
+
+**Day one is paper. Do not type until step 5 of the lesson's order of work.**
+
+- [ ] Move `tests/pending/day9.rs` to `tests/day9.rs`. Run it. Watch it fail.
+- [ ] **Read (30 min).** _Programming Rust_ pp. 114–122 and pp. 211–218. **Read p. 121 twice.**
+- [ ] Write the tape for the self-check expression on paper, with the backward walk.
+- [ ] Create `src/autograd.rs`. Declare it in `src/lib.rs`.
+- [ ] Write `NodeId` with `Clone, Copy, PartialEq, Eq, Debug`, and `NodeId::index`.
+- [ ] Write `Op` with `Clone, Debug, PartialEq`.
+- [ ] Write `Tape` with the four parallel `Vec`s and the invariant comment.
+- [ ] Write `new`, `len`, `is_empty`, `leaf`, `value`, `grad`, `op`, `requires_grad`.
+- [ ] Write `push`, with the `requires` rule computed from the inputs.
+- [ ] Write the forward helpers `add` and `mul`.
+- [ ] Write `zero_grad`. Leave `backward` as `todo!()`.
+
+**Tests**
+
+- [ ] `tape_records_in_order`
+- [ ] `nodeid_is_copy`
+- [ ] `value_roundtrip`
+
+**Self-check (on paper)**
+
+- [ ] **Build and walk** the tape for `f = (a + b) * a` with `a = 2`, `b = 3`. Every node, its op, its inputs, its value. Then `∂f/∂a` symbolically and by a backward walk. **Keep the paper. It is Day 10's first test.**
+- [ ] Answer why `backward` can require a scalar root, what differentiation of a vector output means, and what you must supply instead.
+
+> **Stuck-signal.** If you spent an hour on `Rc<RefCell<Node>>` and now hit `already mutably borrowed`, stop. That is the wall. Switch to the arena, or ask.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ Day 10 — Backward for elementwise and broadcast · 3 h
+
+📖 **[Full lesson — days/DAY_10.md](days/DAY_10.md)** · [Day card](RUST_PHASE_0_1.md#day-10--backward-for-elementwise-and-broadcast)
+
+- [ ] Move `tests/pending/day10.rs` to `tests/day10.rs`. Run it. Watch it fail.
+- [ ] **Read (20 min).** _Programming Rust_ pp. 221–233.
+- [ ] Write the forward helpers `neg`, `exp`, `ln`, `tanh`, `sum_axis`, `broadcast_to`, `sum_all`.
+- [ ] Write `accumulate`, with the shape assertion. Use `+=`, never `=`.
+- [ ] Write `unbroadcast`, with the four-step procedure from lesson section 2.6.
+- [ ] Write the `backward` loop: the scalar check, the seed, the reverse range, the two skips.
+- [ ] Fill the arms for `Leaf`, `Add`, `Neg`, `Mul`, `Exp`, `Ln`, `Tanh`, `Sum`, `Broadcast`.
+- [ ] Confirm the `match` has **no** `_ =>` arm.
+
+**Tests**
+
+- [ ] `backward_matches_paper`
+- [ ] `diamond_accumulates` ← **this test is the lesson of the day**
+- [ ] `broadcast_backward_sums`
+- [ ] `zero_grad_clears`
+- [ ] `sum_backward_restores_axis`
+
+**Self-check (on paper)**
+
+- [ ] **Derive** `∂L/∂b₁` for `y = broadcast([b₁,b₂], [3,2])` and `L = sum(y)`. Write all six terms. Then state the general rule in one sentence.
+- [ ] Draw the **smallest** graph where assignment instead of accumulation gives a wrong answer. State the wrong number and the right one.
+
+> **Stuck-signal.** If `diamond_accumulates` fails with exactly `2x` or exactly `1`, that is the `=` against `+=` fault. Fix it yourself. Any other value, ask.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ Day 11 — Backward for matmul · 3 h
+
+📖 **[Full lesson — days/DAY_11.md](days/DAY_11.md)** · [Day card](RUST_PHASE_0_1.md#day-11--backward-for-matmul)
+
+- [ ] Move `tests/pending/day11.rs` to `tests/day11.rs`. Run it. Watch it fail.
+- [ ] **Do both self-checks BEFORE you write the arm.** The order is the point of the day.
+- [ ] **Read (20 min).** Raschka section 3.4, pp. 64–70. For the shapes only.
+- [ ] Write the `matmul` forward helper.
+- [ ] Write the `MatMul` backward arm, rank 2 first.
+- [ ] Add the batch handling. Transpose the **last two axes only**.
+- [ ] Reduce the batch gradients with `unbroadcast`. Add no special case for batch 1.
+- [ ] Confirm no `.contiguous()` sits in the backward path, or comment which kernel demands it.
+
+**Tests**
+
+- [ ] `matmul_backward_shapes`
+- [ ] `matmul_backward_2x2_by_hand`
+- [ ] `matmul_backward_batched`
+
+**Self-check (on paper)**
+
+- [ ] **Derive from shapes only.** Every arrangement of two of `A`, `B`, `∂L/∂C` giving `[M,K]`. Show exactly one has agreeing inner dimensions. Then the same for `∂L/∂B`.
+- [ ] **Derive properly** from `Cᵢⱼ = Σₖ Aᵢₖ Bₖⱼ`, in index form. State what the shape argument alone could not have told you.
+
+> **Stuck-signal.** If shapes are right, values are wrong, and a transpose makes a different test fail, ask. That is a batch-dimension fault, not a transpose fault.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ Day 12 — The gradient checker · 3 h
+
+📖 **[Full lesson — days/DAY_12.md](days/DAY_12.md)** · [Day card](RUST_PHASE_0_1.md#day-12--the-gradient-checker)
+
+- [ ] Move `tests/pending/day12.rs` to `tests/day12.rs`. Run it. Watch it fail.
+- [ ] **Read (15 min).** _Programming Rust_ pp. 312–319.
+- [ ] Create `src/gradcheck.rs`. **`f64` only. No generic parameter.** Say why in the file header.
+- [ ] Write `GradCheckReport` and `compare_grads`. Start here.
+- [ ] Write `analytic_grads`, then `numeric_grads`. A fresh copy and a fresh tape per perturbation.
+- [ ] Write `grad_check`, then the `weights` path, then `grad_check_projected`.
+
+**Tests**
+
+- [ ] `gradcheck_passes_for_correct_ops`
+- [ ] `gradcheck_catches_injected_bug` ← **until this is red for a wrong gradient, nothing else today is proven**
+- [ ] `gradcheck_projected_catches_sign_flip`
+
+**Self-check (on paper)**
+
+- [ ] **Derive** the central-difference error `O(h²)` and the forward-difference error `O(h)` from a Taylor expansion. Minimize `O(h²) + ε/h`. Give the best `h` and the best achievable accuracy for `f64` and for `f32`. **This is the reason Day 1 exists.**
+- [ ] Write a wrong backward **rule** that passes `grad_check` on `sum(out)` and fails `grad_check_projected`. A different instance from the one in the test file. Explain why the projection catches it.
+
+- [ ] **Break a Day 10 backward arm on purpose. Watch the checker go red. Put it back.**
+
+> **Stuck-signal.** If the check fails near 1e-3 relative error, print the worst index and the input value there first. Then ask.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ Day 13 — Softmax and cross-entropy · 3 h
+
+📖 **[Full lesson — days/DAY_13.md](days/DAY_13.md)** · [Day card](RUST_PHASE_0_1.md#day-13--softmax-and-cross-entropy)
+
+- [ ] Move `tests/pending/day13.rs` to `tests/day13.rs`. Run it. Watch it fail.
+- [ ] **Read (25 min).** Raschka section 5.1.2, pp. 132–140.
+- [ ] Add `LogSumExp` and `CrossEntropy` to `Op`. The build breaks. Read the error list first.
+- [ ] Write `logsumexp` forward, with the max-shift. `keepdim = true`.
+- [ ] Write `softmax` and `log_softmax` as compositions. No new `Op` variant.
+- [ ] **Derive the `LogSumExp` backward on paper.** Write the arm. Gradient-check it before you build on it.
+- [ ] **Do self-check 1 on paper, before you write the cross-entropy arm.**
+- [ ] Write `cross_entropy` forward, rank 2, mean over predictions.
+- [ ] Write the `CrossEntropy` backward arm, with the `1 / predictions` factor.
+- [ ] Record the owed PyTorch fixture in `PROGRESS.md`. It is due before Day 21.
+
+**Tests**
+
+- [ ] `softmax_sums_to_one`
+- [ ] `softmax_overflow_safe`
+- [ ] `softmax_shift_invariant`
+- [ ] `cross_entropy_uniform_is_ln_n` ← **this assertion saves you in Phase 2**
+- [ ] `logsumexp_gradcheck`
+- [ ] `cross_entropy_gradcheck`
+
+**Self-check (on paper)**
+
+- [ ] **Derive** `∂L/∂xᵢ` from `L = −log(softmax(x)[t])`, for `i == t` and `i ≠ t`. Show both collapse to `softmax(x)ᵢ − 1[i == t]`. **With no notes. The most important derivation in Phase 0.**
+- [ ] Compute the expected cross-entropy of an untrained model at vocab 50257. Write one paragraph on why it is the most valuable assertion in a training loop, and the three faults it catches at step 0.
+
+> **Stuck-signal.** If `cross_entropy_gradcheck` fails by the same constant factor everywhere, that is the batch normalisation. Fix it yourself. A varying factor, ask.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ Day 14 — Optimizers, and the Phase 0 capstone · 3.5 h
+
+📖 **[Full lesson — days/DAY_14.md](days/DAY_14.md)** · 🎓 **[The capstone in depth — capstone_r0b/README.md](capstone_r0b/README.md)** · [Day card](RUST_PHASE_0_1.md#day-14--optimizers-and-the-phase-0-capstone)
+
+- [ ] Move `tests/pending/day14.rs` to `tests/day14.rs`. Run it **in release**. Watch it fail.
+- [ ] **Do self-check 1 on paper before you implement AdamW.**
+- [ ] **Read (20 min).** _Programming Rust_ pp. 237–245.
+- [ ] Create `src/optim.rs`. Write the `Optimizer` trait with the default `zero_grad`.
+- [ ] Write `Sgd` with `Sgd::new(lr, momentum)`.
+- [ ] Write `AdamW` with `AdamW::new(lr, beta1, beta2, eps, wd)`. Correct **both** moments.
+- [ ] Apply the decay to the **parameter**, outside the normalisation.
+- [ ] Create `src/nn.rs`. Write `Linear::new` with the init variance from lesson section 2.5.
+- [ ] Write `Linear::forward`, appending `(id, tensor)` for `w` then `b`.
+- [ ] Gradient-check a two-layer MLP **before** you train it.
+- [ ] Write the three CSVs to `evidence/`: the loss curve, the data, and the boundary grid.
+- [ ] Run `capstone_r0b/plot_loss.py` and `capstone_r0b/render_boundary.py`.
+- [ ] Run `render_boundary.py --best-line` and put the number in the write-up.
+- [ ] Write `evidence/phase0_spiral.md` with the seed, the hyperparameters and the machine.
+
+**Tests**
+
+- [ ] `sgd_descends_quadratic`
+- [ ] `adamw_bias_correction_first_step`
+- [ ] `adamw_weight_decay_is_decoupled`
+- [ ] `spiral_classification`
+- [ ] `all_ops_gradchecked` ← **the R0b acceptance test**
+
+**Self-check (on paper)**
+
+- [ ] **Trace one AdamW step by hand.** `g = 0.1`, `m₀ = v₀ = 0`, `β₁ = 0.9`, `β₂ = 0.999`, `lr = 1e-3`, `eps = 1e-8`, `wd = 0`. Every number. Show the update is near `lr`, and state in one sentence why that is by design.
+- [ ] Write the decoupled and the coupled weight-decay updates side by side. Name the term that differs. State what the `v̂` denominator does to an L2 gradient contribution.
+
+- [ ] **Inject a fault and watch `all_ops_gradchecked` fail.** Put it back.
+
+> **Stuck-signal.** If the spiral loss stops at about `ln(2) ≈ 0.693`, work the diagnostic ladder in [`capstone_r0b/README.md`](capstone_r0b/README.md) section 7, from rung 0. **Rung 5, overfitting 4 points, splits the whole search space in seconds.** Do not tune before it. If the ladder runs out, ask.
+
+- [ ] Session ritual steps 8 to 10 are done.
+
+---
+
+## ☐ GATE R0b — do not start Phase 1 until all four are true
+
+- [ ] `cargo test --release` is fully green, Days 1 to 14.
+- [ ] `all_ops_gradchecked` passes, and **you watched it fail** after you injected a fault.
+- [ ] The spiral CSVs, both plots and `evidence/phase0_spiral.md` are committed, with the seed recorded.
+- [ ] The R0b LinkedIn post is shipped.
+
+**A claim without its artifact is not done.** When all four boxes are ticked, mark R0b ✅ in `PROGRESS.md`.
 
 ---
 
@@ -347,7 +574,6 @@ Do not plan these now. They expand at their gates.
 
 | Claim   | Days   | Cards                                                                    | Exit test                                                            |
 | ------- | ------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **R0b** | 9–14   | Tape, backward, gradient checker, softmax, cross-entropy, AdamW          | Every op passes `grad_check` in `f64`. You watched the checker fail. |
 | **R1**  | 15–25  | BPE, embeddings, LayerNorm, attention, GELU, blocks, safetensors, parity | Logit parity under 1e-3 against the real GPT-2 124M checkpoint.      |
 | **P1**  | 1 week | NumPy and PyTorch fluency. Rebuild GPT-2.                                | A 3-way parity table against the Rust version.                       |
 | **P2**  | 1 week | Training hygiene.                                                        | Three timed diagnoses of broken runs.                                |
