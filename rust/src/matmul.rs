@@ -120,8 +120,7 @@ pub fn matmul<T: Scalar>(a: &Tensor<T>, b: &Tensor<T>) -> Result<Tensor<T>, Shap
         // When a's dim at this batch axis is 1 (it was broadcast up from 1),
         // the slice index is always 0 — there's only one slice to take.
         let mut a_view = a.clone();
-        for axis in 0..a_batch_rank {
-            let b_k = a_batch_idx[axis];
+        for (axis, &b_k) in a_batch_idx.iter().enumerate() {
             let k = if a.shape()[axis] == 1 { 0 } else { b_k };
             a_view = a_view.slice(axis, k, k + 1)?;
         }
@@ -129,8 +128,7 @@ pub fn matmul<T: Scalar>(a: &Tensor<T>, b: &Tensor<T>) -> Result<Tensor<T>, Shap
 
         // Same for b — slice, materialise, reshape to [K, N].
         let mut b_view = b.clone();
-        for axis in 0..b_batch_rank {
-            let b_k = b_batch_idx[axis];
+        for (axis, &b_k) in b_batch_idx.iter().enumerate() {
             let k = if b.shape()[axis] == 1 { 0 } else { b_k };
             b_view = b_view.slice(axis, k, k + 1)?;
         }
@@ -147,4 +145,89 @@ pub fn matmul<T: Scalar>(a: &Tensor<T>, b: &Tensor<T>) -> Result<Tensor<T>, Shap
     }
 
     Ok(Tensor::from_vec(out_buf, &out_shape))
+}
+
+/// Cache-blocked matmul: `[M, K] x [K, N] -> [M, N]`.
+///
+/// Same arithmetic as `matmul_naive` but accesses memory in `block x block`
+/// tiles. While three tiles (one of A, one of B, one of C) are live, the
+/// inner loops reuse them from L1 instead of going back to DRAM.
+///
+/// `block == 0` returns `SizeMismatch` — there is no sensible tile of side 0.
+/// Rank-2 only, like the oracle. Batched blocking is not on this card.
+pub fn matmul_blocked<T: Scalar>(
+    a: &Tensor<T>,
+    b: &Tensor<T>,
+    block: usize,
+) -> Result<Tensor<T>, ShapeError> {
+    // --- validate inputs (same checks as the oracle) ---
+    if a.shape().len() != 2 {
+        return Err(ShapeError::BadRank {
+            got: a.shape().len(),
+            want: 2,
+        });
+    }
+    if b.shape().len() != 2 {
+        return Err(ShapeError::BadRank {
+            got: b.shape().len(),
+            want: 2,
+        });
+    }
+    if a.shape()[1] != b.shape()[0] {
+        return Err(ShapeError::SizeMismatch);
+    }
+    // A tile of side 0 is degenerate — nothing to compute, and step_by(0)
+    // would panic. Return an error rather than a silent zero result.
+    if block == 0 {
+        return Err(ShapeError::SizeMismatch);
+    }
+
+    let m = a.shape()[0];
+    let k = a.shape()[1];
+    let n = b.shape()[1];
+
+    let mut out: Vec<T> = vec![T::ZERO; m * n];
+
+    // Six loops: three over tiles, three inside a tile.
+    //
+    // ii steps over rows of C in chunks of `block`.
+    // jj steps over columns of C in chunks of `block`.
+    // kk steps over the K dimension in chunks of `block`.
+    //
+    // The `min` calls clamp each inner range to the matrix boundary.
+    // The last tile in any direction is short when the dimension is not
+    // a multiple of `block`. This is where every blocking bug lives.
+    let ii_end = m; // rename for clarity in the loops
+    let jj_end = n;
+    let kk_end = k;
+
+    let mut ii = 0;
+    while ii < ii_end {
+        let i_max = if ii + block < ii_end { ii + block } else { ii_end };
+        let mut jj = 0;
+        while jj < jj_end {
+            let j_max = if jj + block < jj_end { jj + block } else { jj_end };
+            let mut kk = 0;
+            while kk < kk_end {
+                let k_max = if kk + block < kk_end { kk + block } else { kk_end };
+
+                // Inner triple loop — the tile of C[i_max, j_max] += A[i_max, kk_max] * B[kk_max, j_max]
+                for i in ii..i_max {
+                    for j in jj..j_max {
+                        let mut sum = out[i * n + j];
+                        for k_idx in kk..k_max {
+                            sum = sum + a.get(&[i, k_idx]) * b.get(&[k_idx, j]);
+                        }
+                        out[i * n + j] = sum;
+                    }
+                }
+
+                kk += block;
+            }
+            jj += block;
+        }
+        ii += block;
+    }
+
+    Ok(Tensor::from_vec(out, &[m, n]))
 }

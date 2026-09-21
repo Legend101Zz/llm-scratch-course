@@ -7,3 +7,7 @@ edition = "2024"
 
 [dev-dependencies]
 criterion = "0.5"
+
+[[bench]]
+name = "matmul"
+harness = false
