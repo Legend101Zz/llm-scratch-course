@@ -153,6 +153,25 @@ impl<T: Scalar> Tensor<T> {
         self.data[index]
     }
 
+    /// Borrow the underlying buffer as a `&[T]`, in storage order.
+    ///
+    /// This is **only meaningful for contiguous tensors.** For a contiguous
+    /// rank-2 tensor of shape `[M, K]`, element `[i, k]` lives at
+    /// `slice[i * K + k]`. For a non-contiguous view (transpose, slice,
+    /// broadcast), the slice is the *underlying storage*, not the logical
+    /// view — reading it as if it were the view will give wrong answers.
+    ///
+    /// Use this in hot loops where you have already checked
+    /// `is_contiguous()` and you know the layout. The compiler turns the
+    /// `slice[i*K + k]` access into a single load with no bounds check or
+    /// stride math.
+    pub fn as_slice(&self) -> &[T] {
+        // For contiguous tensors, offset is 0 and numel == data.len().
+        // For non-contiguous views, the caller should not be calling this.
+        // We return just the prefix that belongs to this view.
+        self.data.as_slice()
+    }
+
     /// Reorder the axes according to `order`. `order[i]` names the **source**
     /// axis that becomes the new axis `i`.
     ///

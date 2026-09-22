@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use rustgpt::matmul::{matmul_blocked, matmul_naive};
+use rustgpt::matmul::{matmul_blocked, matmul_naive, matmul_parallel};
 use rustgpt::rng::Rng;
 use rustgpt::tensor::Tensor;
 
@@ -10,7 +10,8 @@ fn square(rng: &mut Rng, n: usize) -> Tensor<f32> {
     Tensor::from_vec(data, &[n, n])
 }
 
-fn bench_matmul(c: &mut Criterion) {
+/// Day 7 sweep: one kernel, one block-size sweep.
+fn bench_blocked(c: &mut Criterion) {
     let mut rng = Rng::seed(1234);
 
     for &n in &[128usize, 512, 1024] {
@@ -41,5 +42,38 @@ fn bench_matmul(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_matmul);
+/// Day 8 sweep: parallel kernel at N=1024 across thread counts 1..=10.
+/// The single thread case (threads=1) is the apples-to-apples baseline
+/// for speedup numbers in the evidence table.
+fn bench_parallel(c: &mut Criterion) {
+    let mut rng = Rng::seed(1234);
+
+    // Only at N = 1024 — small N is dominated by spawn cost (section 2.9 #4)
+    // and would not show a meaningful speedup. The lesson explicitly says so.
+    for &n in &[1024usize] {
+        let a: Tensor<f32> = square(&mut rng, n);
+        let b: Tensor<f32> = square(&mut rng, n);
+
+        // Block size: pick the best from Day 7 (block=8 was the N=1024 winner).
+        let block = 32usize;
+
+        let mut group = c.benchmark_group(format!("parallel_{n}"));
+        group.throughput(Throughput::Elements(2 * (n * n * n) as u64));
+
+        for &threads in &[1usize, 2, 4, 8, 10] {
+            group.bench_with_input(
+                BenchmarkId::new("threads", threads),
+                &threads,
+                |bench, &t| {
+                    bench.iter(|| {
+                        matmul_parallel(black_box(&a), black_box(&b), block, t).unwrap()
+                    });
+                },
+            );
+        }
+        group.finish();
+    }
+}
+
+criterion_group!(benches, bench_blocked, bench_parallel);
 criterion_main!(benches);

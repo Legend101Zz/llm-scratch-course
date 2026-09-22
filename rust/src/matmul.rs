@@ -1,3 +1,5 @@
+use std::thread;
+
 use crate::scalar::Scalar;
 use crate::tensor::{broadcast_shapes, unravel_index, ShapeError, Tensor};
 
@@ -153,8 +155,18 @@ pub fn matmul<T: Scalar>(a: &Tensor<T>, b: &Tensor<T>) -> Result<Tensor<T>, Shap
 /// tiles. While three tiles (one of A, one of B, one of C) are live, the
 /// inner loops reuse them from L1 instead of going back to DRAM.
 ///
+/// **Fast path:** when both `a` and `b` are contiguous (the common case),
+/// the inner loop indexes the underlying `&[T]` slices directly. This is
+/// the optimisation the Day 7 lesson points at next — see section 2.7,
+/// "register blocking / packing."
+///
+/// **Slow path:** when either input is a transposed, sliced, or broadcast
+/// view, the inner loop falls back to `a.get(&[i, k])` so the strides and
+/// offset are honoured. This is what the f64 test exercises with a
+/// transposed A, and it must keep working.
+///
 /// `block == 0` returns `SizeMismatch` — there is no sensible tile of side 0.
-/// Rank-2 only, like the oracle. Batched blocking is not on this card.
+/// Rank-2 only, like the oracle.
 pub fn matmul_blocked<T: Scalar>(
     a: &Tensor<T>,
     b: &Tensor<T>,
@@ -188,46 +200,225 @@ pub fn matmul_blocked<T: Scalar>(
 
     let mut out: Vec<T> = vec![T::ZERO; m * n];
 
-    // Six loops: three over tiles, three inside a tile.
-    //
-    // ii steps over rows of C in chunks of `block`.
-    // jj steps over columns of C in chunks of `block`.
-    // kk steps over the K dimension in chunks of `block`.
-    //
-    // The `min` calls clamp each inner range to the matrix boundary.
-    // The last tile in any direction is short when the dimension is not
-    // a multiple of `block`. This is where every blocking bug lives.
-    let ii_end = m; // rename for clarity in the loops
-    let jj_end = n;
-    let kk_end = k;
+    // --- dispatch: fast path if both inputs are contiguous ---
+    if a.is_contiguous() && b.is_contiguous() {
+        // For contiguous rank-2 tensors of shape [M, K] and [K, N],
+        // element [i, k] of A lives at a_slice[i*K + k], and element
+        // [k, j] of B lives at b_slice[k*N + j]. No bounds check, no
+        // stride math, no allocation per access.
+        let a_slice = a.as_slice();
+        let b_slice = b.as_slice();
 
-    let mut ii = 0;
-    while ii < ii_end {
-        let i_max = if ii + block < ii_end { ii + block } else { ii_end };
-        let mut jj = 0;
-        while jj < jj_end {
-            let j_max = if jj + block < jj_end { jj + block } else { jj_end };
-            let mut kk = 0;
-            while kk < kk_end {
-                let k_max = if kk + block < kk_end { kk + block } else { kk_end };
+        let mut ii = 0;
+        while ii < m {
+            let i_max = if ii + block < m { ii + block } else { m };
+            let mut jj = 0;
+            while jj < n {
+                let j_max = if jj + block < n { jj + block } else { n };
+                let mut kk = 0;
+                while kk < k {
+                    let k_max = if kk + block < k { kk + block } else { k };
 
-                // Inner triple loop — the tile of C[i_max, j_max] += A[i_max, kk_max] * B[kk_max, j_max]
-                for i in ii..i_max {
-                    for j in jj..j_max {
-                        let mut sum = out[i * n + j];
-                        for k_idx in kk..k_max {
-                            sum = sum + a.get(&[i, k_idx]) * b.get(&[k_idx, j]);
+                    // Inner triple loop — direct slice indexing.
+                    for i in ii..i_max {
+                        let a_row = &a_slice[i * k..]; // pointer to row i of A
+                        for j in jj..j_max {
+                            let mut sum = out[i * n + j];
+                            for k_idx in kk..k_max {
+                                sum = sum + a_row[k_idx] * b_slice[k_idx * n + j];
+                            }
+                            out[i * n + j] = sum;
                         }
-                        out[i * n + j] = sum;
                     }
-                }
 
-                kk += block;
+                    kk += block;
+                }
+                jj += block;
             }
-            jj += block;
+            ii += block;
         }
-        ii += block;
+    } else {
+        // Slow path: at least one input is a strided view. We must use
+        // get() so the strides and offset are honoured. This is the
+        // matmul the f64 test exercises with a transposed A.
+        let mut ii = 0;
+        while ii < m {
+            let i_max = if ii + block < m { ii + block } else { m };
+            let mut jj = 0;
+            while jj < n {
+                let j_max = if jj + block < n { jj + block } else { n };
+                let mut kk = 0;
+                while kk < k {
+                    let k_max = if kk + block < k { kk + block } else { k };
+
+                    for i in ii..i_max {
+                        for j in jj..j_max {
+                            let mut sum = out[i * n + j];
+                            for k_idx in kk..k_max {
+                                sum = sum + a.get(&[i, k_idx]) * b.get(&[k_idx, j]);
+                            }
+                            out[i * n + j] = sum;
+                        }
+                    }
+
+                    kk += block;
+                }
+                jj += block;
+            }
+            ii += block;
+        }
     }
 
+    Ok(Tensor::from_vec(out, &[m, n]))
+}
+
+/// Row-partitioned parallel matmul: `[M, K] x [K, N] -> [M, N]`.
+///
+/// Same arithmetic as `matmul_blocked`, but the rows of `C` are split
+/// across threads with `chunks_mut`. Each thread owns a **disjoint band
+/// of whole rows** of the output, so no two threads write the same byte.
+///
+/// **Bit-identical to `matmul_blocked`.** A row partition leaves the
+/// summation order of every output element unchanged — each thread
+/// walks `k` in the same tile order as the single-threaded kernel — so
+/// the rounding is identical. See `DAY_08.md` section 2.8.
+///
+/// **Fix B for the Rc collision.** `Rc<Vec<T>>` is `!Send`, so we cannot
+/// move `&Tensor<T>` into a thread. Instead we extract plain `&[T]`
+/// slices **once**, before the scope. For contiguous inputs this is a
+/// free borrow (`as_slice()`); for strided inputs (transpose, slice) we
+/// walk the logical view with `to_vec()`. See `DAY_08.md` section 4.2.
+///
+/// `block == 0` returns `SizeMismatch`. `threads == 0` returns
+/// `SizeMismatch`. `threads` is a *request*: the kernel may use fewer
+/// when `M < threads`. Rank-2 only, like `matmul_blocked`.
+pub fn matmul_parallel<T: Scalar + Send + Sync>(
+    a: &Tensor<T>,
+    b: &Tensor<T>,
+    block: usize,
+    threads: usize,
+) -> Result<Tensor<T>, ShapeError> {
+    // --- Step 1: validate inputs (same checks as the oracle) ---
+    if a.shape().len() != 2 {
+        return Err(ShapeError::BadRank {
+            got: a.shape().len(),
+            want: 2,
+        });
+    }
+    if b.shape().len() != 2 {
+        return Err(ShapeError::BadRank {
+            got: b.shape().len(),
+            want: 2,
+        });
+    }
+    if a.shape()[1] != b.shape()[0] {
+        return Err(ShapeError::SizeMismatch);
+    }
+    if block == 0 {
+        return Err(ShapeError::SizeMismatch);
+    }
+    if threads == 0 {
+        return Err(ShapeError::SizeMismatch);
+    }
+
+    let m = a.shape()[0];
+    let k = a.shape()[1];
+    let n = b.shape()[1];
+
+    // --- Step 2: row count per thread ---
+    // div_ceil, not / — plain division drops remainder rows.
+    let rows_per_thread = m.div_ceil(threads);
+
+    // --- Step 3: extract &[T] (Fix B for the Rc problem) ---
+    // Rc<Vec<T>> is !Send. We must get the data out as a plain &[T] before
+    // any thread spawn. We do this once, OUTSIDE the scope, so it doesn't
+    // happen per-thread per-tile (that would dominate the cost).
+    //
+    // For contiguous inputs, as_slice() borrows the underlying buffer for
+    // free. For strided views, to_vec() walks the logical layout.
+    // The .to_vec() at the end is a safety net: a Vec owns its data, so
+    // we know it lives as long as `a_data`/`b_data` are in scope.
+    let a_data: Vec<T> = if a.is_contiguous() {
+        a.as_slice().to_vec()
+    } else {
+        a.to_vec()
+    };
+
+    let b_data: Vec<T> = if b.is_contiguous() {
+        b.as_slice().to_vec()
+    } else {
+        b.to_vec()
+    };
+
+    // --- Step 4: allocate the output, split into row bands ---
+    let mut out: Vec<T> = vec![T::ZERO; m * n];
+
+    // --- Step 5 + 6: spawn one thread per chunk of rows ---
+    //
+    // We bind `&a_data` and `&b_data` to local names BEFORE the loop so
+    // each closure can `move`-capture those slice references (which are
+    // `Copy`) rather than the underlying `Vec<T>` (which is not). Without
+    // this, the first iteration would move `a_data` into the closure and
+    // the second iteration would not be able to use it.
+    let a_slice: &[T] = &a_data;
+    let b_slice: &[T] = &b_data;
+
+    thread::scope(|s| {
+        for (chunk_idx, chunk) in out.chunks_mut(rows_per_thread * n).enumerate() {
+            // Each chunk covers `rows_per_thread` rows of the output, except the
+            // last chunk which is short when M is not a multiple of rows_per.
+            let row_start = chunk_idx * rows_per_thread;
+            let rows_in_chunk = chunk.len() / n;
+            let row_end = row_start + rows_in_chunk;
+
+            // The closure captures:
+            //   - `chunk`: &mut [T] — this thread's row band of `out`
+            //   - `row_start`, `row_end`: usize — which rows of A this thread owns
+            //   - `k`, `n`, `block`: usize — matrix dimensions and tile size
+            //   - `a_slice`, `b_slice`: &[T] — read-only input data
+            //
+            // `move` moves the &mut [T] and usize captures by value. The
+            // &[T] captures are Copy, so move is harmless for them.
+            //
+            // The function body is the same six-loop kernel as Day 7's
+            // fast path, restricted to the rows [row_start, row_end).
+            s.spawn(move || {
+                // Six loops, restricted to this thread's rows.
+                let mut ii = row_start;
+                while ii < row_end {
+                    let i_max = if ii + block < row_end {
+                        ii + block
+                    } else {
+                        row_end
+                    };
+                    let mut jj = 0;
+                    while jj < n {
+                        let j_max = if jj + block < n { jj + block } else { n };
+                        let mut kk = 0;
+                        while kk < k {
+                            let k_max = if kk + block < k { kk + block } else { k };
+
+                            for i in ii..i_max {
+                                let a_row = &a_slice[i * k..];
+                                for j in jj..j_max {
+                                    let mut sum = chunk[(i - row_start) * n + j];
+                                    for k_idx in kk..k_max {
+                                        sum = sum + a_row[k_idx] * b_slice[k_idx * n + j];
+                                    }
+                                    chunk[(i - row_start) * n + j] = sum;
+                                }
+                            }
+
+                            kk += block;
+                        }
+                        jj += block;
+                    }
+                    ii += block;
+                }
+            });
+        }
+    });
+
+    // --- Step 7: wrap the buffer and return ---
     Ok(Tensor::from_vec(out, &[m, n]))
 }
